@@ -37,8 +37,9 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll() // Allow Auth APIs
-                        .requestMatchers("/", "/index.html", "/register.html", "/home.html", "/css/**", "/js/**",
-                                "/images/**")
+                        .requestMatchers("/", "/index.html", "/register.html", "/home.html", "/ws/**", "/css/**",
+                                "/js/**",
+                                "/images/**", "/Assets/**")
                         .permitAll() // Allow Static Resources
                         .anyRequest().authenticated());
         http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

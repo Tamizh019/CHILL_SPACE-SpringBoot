@@ -4,33 +4,87 @@
 <head>
     <meta charset="UTF-8">
     <title>Chill Space | Home</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Essential CSS -->
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/home.css">
 </head>
 
 <body>
-    <div class="main-container">
-        <div class="glass-hero" style="text-align: center; opacity: 1; transform: translateY(0);">
-            <div class="hero-content">
-                <h1 class="hero-title">Welcome Home! 🚀</h1>
-                <p class="hero-subtitle">You have successfully logged into the Spring Boot Backend.</p>
-                <div style="margin-top: 20px;">
-                    <p style="color: var(--success);">JWT Token is valid.</p>
-                </div>
-                <button onclick="logout()" class="cta-button" style="margin-top:20px; width: 200px;">Logout</button>
+
+    <header>
+        <div class="logo">
+            <img src="Assets/logo1.svg" alt="Logo" width="40" height="40">
+            <div class="animated-text-container">
+                <span class="cyber-animated-text">CHILL SPACE</span>
             </div>
         </div>
-    </div>
-    <script>
-        // Client-side protection
-        const token = localStorage.getItem('jwt_token');
-        if (!token) {
-            window.location.href = 'index.html';
-        }
+        <div class="header-actions">
+            <!-- User Info Display -->
+            <div class="user-info">
+                <div class="user-avatar">
+                    <img src="Assets/pfp2.jpg" alt="Profile">
+                </div>
+                <!-- Username will be injected by JS -->
+                <span id="username">User</span>
+            </div>
 
-        function logout() {
-            localStorage.removeItem('jwt_token');
-            localStorage.removeItem('user_info');
-            window.location.href = 'index.html';
+            <button id="logoutBtn">
+                <i class="fas fa-sign-out-alt"></i>
+                <span class="desktop-only">Logout</span>
+            </button>
+        </div>
+    </header>
+
+    <main>
+        <div class="main-content">
+
+            <!-- Chat Container -->
+            <!-- We use 'chat-container' class from home.css -->
+            <section class="chat-container">
+
+                <!-- Chat Messages Area -->
+                <div class="chat-messages" id="chatMessages">
+                    <!-- Messages will be injected here by chat.js -->
+                    <div class="message event-message">
+                        <div class="message-text" style="text-align:center; color: var(--text-muted);">
+                            Welcome to the start of the chat! 🚀
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Input Area -->
+                <div class="chat-input-wrapper" style="padding: 1.5rem; background: rgba(0,0,0,0.2);">
+                    <div class="chat-input" style="display:flex; gap:10px; width:100%;">
+                        <input type="text" id="chatInput" class="glass-input" placeholder="Type your message..."
+                            style="flex:1; padding: 15px; border-radius: 12px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white;">
+
+                        <button class="btn btn-primary" onclick="sendMessage()"
+                            style="width: 50px; height: 50px; border-radius: 12px; background: var(--primary); color: white; border: none; cursor: pointer;">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
+
+            </section>
+
+        </div>
+    </main>
+
+    <!-- Dependencies for WebSocket -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.6.1/sockjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+
+    <!-- Client Logic -->
+    <script src="js/chat.js"></script>
+
+    <script>
+        // Simple script to set username in header
+        const user = JSON.parse(localStorage.getItem('user_info'));
+        if (user) {
+            document.getElementById('username').textContent = user.username;
         }
     </script>
 </body>
