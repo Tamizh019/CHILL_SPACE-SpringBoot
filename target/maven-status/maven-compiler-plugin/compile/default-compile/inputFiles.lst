@@ -1,6 +1,7 @@
 C:\Users\jefft\OneDrive\Desktop\Chill Space SpringBoot\src\main\java\com\chillspace\backend\security\JwtAuthenticationFilter.java
 C:\Users\jefft\OneDrive\Desktop\Chill Space SpringBoot\src\main\java\com\chillspace\backend\repository\MessageRepository.java
 C:\Users\jefft\OneDrive\Desktop\Chill Space SpringBoot\src\main\java\com\chillspace\backend\controller\dto\LoginRequest.java
+C:\Users\jefft\OneDrive\Desktop\Chill Space SpringBoot\src\main\java\com\chillspace\backend\controller\UserController.java
 C:\Users\jefft\OneDrive\Desktop\Chill Space SpringBoot\src\main\java\com\chillspace\backend\security\JwtUtils.java
 C:\Users\jefft\OneDrive\Desktop\Chill Space SpringBoot\src\main\java\com\chillspace\backend\service\AuthService.java
 C:\Users\jefft\OneDrive\Desktop\Chill Space SpringBoot\src\main\java\com\chillspace\backend\service\CustomUserDetailsService.java

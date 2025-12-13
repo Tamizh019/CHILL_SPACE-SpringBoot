@@ -32,6 +32,11 @@ public class User {
 
     private String avatarUrl;
 
+    // Avatar style for DiceBear (initials, bottts, avataaars, fun-emoji, pixel-art,
+    // lorelei)
+    @Column(name = "avatar_style")
+    private String avatarStyle = "initials";
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 

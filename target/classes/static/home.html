@@ -5,7 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chill Space - Modern Chat Platform</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="css/home.css">
 </head>
@@ -20,7 +21,7 @@
 
     <!-- Main App Container -->
     <div class="app-wrapper">
-        
+
         <!-- Top Navigation Bar -->
         <nav class="top-navbar">
             <div class="nav-left">
@@ -45,19 +46,10 @@
                         <i class="fas fa-folder"></i>
                         <span>Files</span>
                     </button>
-                    <button class="tab-btn" data-tab="games">
-                        <i class="fas fa-gamepad"></i>
-                        <span>Games</span>
-                    </button>
                 </div>
             </div>
 
             <div class="nav-right">
-                <button class="icon-button notification-btn">
-                    <i class="fas fa-bell"></i>
-                    <span class="badge">3</span>
-                </button>
-                
                 <div class="user-menu">
                     <div class="user-avatar-btn" id="userAvatarBtn">
                         <img src="https://api.dicebear.com/7.x/bottts/svg?seed=User" id="headerAvatar" alt="Avatar">
@@ -72,7 +64,7 @@
                             </div>
                         </div>
                         <div class="dropdown-divider"></div>
-                        <a href="#" class="dropdown-item"><i class="fas fa-user"></i> Profile</a>
+                        <a href="#" class="dropdown-item" id="profileMenuItem"><i class="fas fa-user"></i> Profile</a>
                         <a href="#" class="dropdown-item"><i class="fas fa-cog"></i> Settings</a>
                         <a href="#" class="dropdown-item"><i class="fas fa-moon"></i> Dark Mode</a>
                         <div class="dropdown-divider"></div>
@@ -86,20 +78,15 @@
 
         <!-- Main Content Area -->
         <div class="main-container">
-            
+
             <!-- Chat Section -->
             <section class="chat-container">
-                
+
                 <!-- Chat Header -->
                 <div class="chat-header">
                     <div class="chat-info">
-                        <h2><i class="fas fa-hashtag"></i> general</h2>
+                        <h2>Group Chat</h2>
                         <p><span class="online-indicator"></span> <span id="onlineCount">0</span> members online</p>
-                    </div>
-                    <div class="chat-actions">
-                        <button class="icon-button"><i class="fas fa-search"></i></button>
-                        <button class="icon-button"><i class="fas fa-users"></i></button>
-                        <button class="icon-button"><i class="fas fa-ellipsis-v"></i></button>
                     </div>
                 </div>
 
@@ -110,7 +97,7 @@
                         <div class="welcome-icon">
                             <i class="fas fa-rocket"></i>
                         </div>
-                        <h3>Welcome to #general</h3>
+                        <h3>Welcome to Group Chat</h3>
                         <p>This is the beginning of your legendary journey!</p>
                     </div>
                 </div>
@@ -133,27 +120,12 @@
                 <!-- Message Input -->
                 <div class="message-input-container">
                     <div class="input-wrapper">
-                        <button class="input-icon-btn" title="Attach File">
-                            <i class="fas fa-plus"></i>
-                        </button>
-                        
                         <div class="input-field-wrapper">
-                            <input 
-                                type="text" 
-                                id="chatInput" 
-                                placeholder="Message #general..."
-                                autocomplete="off"
-                                maxlength="2000"
-                            />
+                            <input type="text" id="chatInput" placeholder="Message" autocomplete="off"
+                                maxlength="2000" />
                             <div class="input-actions">
                                 <button class="emoji-btn" title="Add Emoji">
                                     <i class="fas fa-smile"></i>
-                                </button>
-                                <button class="gif-btn" title="Send GIF">
-                                    <i class="fas fa-gift"></i>
-                                </button>
-                                <button class="sticker-btn" title="Send Sticker">
-                                    <i class="fas fa-star"></i>
                                 </button>
                             </div>
                         </div>
@@ -171,17 +143,11 @@
 
             <!-- Right Sidebar -->
             <aside class="members-sidebar">
-                
+
                 <!-- Sidebar Header -->
                 <div class="sidebar-header">
                     <h3>Members</h3>
                     <span class="member-count" id="totalMembers">0</span>
-                </div>
-
-                <!-- Search Members -->
-                <div class="search-box">
-                    <i class="fas fa-search"></i>
-                    <input type="text" placeholder="Search members..." id="searchMembers">
                 </div>
 
                 <!-- Online Members -->
@@ -244,4 +210,5 @@
     <script src="js/chat.js"></script>
 
 </body>
+
 </html>

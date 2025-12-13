@@ -4,9 +4,11 @@ com\chillspace\backend\listener\WebSocketEventListener.class
 com\chillspace\backend\ChillSpaceApplication.class
 com\chillspace\backend\controller\dto\AuthResponse.class
 com\chillspace\backend\config\WebSocketConfig.class
+com\chillspace\backend\controller\UserController$UpdateProfileRequest.class
 com\chillspace\backend\model\Message.class
 com\chillspace\backend\model\User.class
 com\chillspace\backend\security\JwtUtils.class
+com\chillspace\backend\controller\UserController.class
 com\chillspace\backend\security\JwtAuthenticationFilter.class
 com\chillspace\backend\service\AuthService.class
 com\chillspace\backend\config\SecurityConfig.class

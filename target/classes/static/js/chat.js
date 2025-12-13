@@ -1,395 +1,818 @@
 'use strict';
-
-const chatPage = document.querySelector('#chat-page');
-const usernameForm = document.querySelector('#usernameForm');
-const messageForm = document.querySelector('#messageForm');
-const messageInput = document.querySelector('#message');
-const messageArea = document.querySelector('#chatMessages');
-const connectingElement = document.querySelector('.connecting');
-const onlineMembersList = document.querySelector('#onlineMembersList');
-
+// ═══════════════════════════════════════════════════
+// 🔧 GLOBAL VARIABLES
+// ═══════════════════════════════════════════════════
 let stompClient = null;
 let username = null;
+let userId = null;
 let userRole = null;
-let subscription = null;
+let token = null;
 let onlineUsers = new Set();
+let allUsersCache = []; // Cache all users
 
-// Parse JWT to get Role
+// DOM Elements
+const chatInput = document.getElementById('chatInput');
+const chatMessages = document.getElementById('chatMessages');
+const sendBtn = document.getElementById('sendBtn');
+const charCount = document.getElementById('charCount');
+const onlineMembersList = document.getElementById('onlineMembersList');
+const offlineMembersList = document.getElementById('offlineMembersList');
+const onlineCountDisplay = document.getElementById('onlineCount');
+const onlineCountSidebar = document.getElementById('onlineCountSidebar');
+const totalMembersDisplay = document.getElementById('totalMembers');
+const offlineCountDisplay = document.getElementById('offlineCount');
+const logoutBtn = document.getElementById('logoutBtn');
+const profileModal = document.getElementById('profileModal');
+const modalClose = document.querySelector('.modal-close');
+const dropdownUsername = document.getElementById('dropdownUsername');
+const dropdownRole = document.getElementById('dropdownRole');
+const headerAvatar = document.getElementById('headerAvatar');
+
+// ═══════════════════════════════════════════════════
+// 🚀 INITIALIZATION
+// ═══════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+    initializeApp();
+});
+
+function initializeApp() {
+    // Load user info from localStorage
+    const userInfo = JSON.parse(localStorage.getItem('user_info'));
+    token = localStorage.getItem('jwt_token');
+
+    if (!userInfo || !token) {
+        console.error('❌ No user info or token found');
+        window.location.href = 'index.html';
+        return;
+    }
+
+    // Set user data
+    username = userInfo.username;
+    userId = userInfo.id;
+
+    // Parse JWT to get role
+    const decoded = parseJwt(token);
+    userRole = decoded.role || 'USER';
+
+    console.log('✅ User authenticated:', username, '| Role:', userRole);
+
+    // Update UI with user info
+    updateUserUI();
+
+    // Setup event listeners
+    setupEventListeners();
+
+    // Connect to WebSocket
+    connectWebSocket();
+
+    // Load initial data
+    loadChatHistory();
+    loadAllUsers();
+}
+
+// ═══════════════════════════════════════════════════
+// 🔐 AUTHENTICATION HELPERS
+// ═══════════════════════════════════════════════════
 function parseJwt(token) {
     try {
         const base64Url = token.split('.')[1];
         const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-        const jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function (c) {
-            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-        }).join(''));
+        const jsonPayload = decodeURIComponent(
+            atob(base64).split('').map(c => {
+                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+            }).join('')
+        );
         return JSON.parse(jsonPayload);
     } catch (e) {
+        console.error('Failed to parse JWT:', e);
         return {};
     }
 }
 
-// Load user info from Login
-const userInfo = JSON.parse(localStorage.getItem('user_info'));
-const token = localStorage.getItem('jwt_token');
+function updateUserUI() {
+    // Get avatar style from server cache for current user
+    const myInfo = allUsersCache.find(u => u.username === username);
+    const avatarStyle = myInfo?.avatarStyle || 'initials';
 
-if (userInfo && token) {
-    username = userInfo.username;
-    // Extract Role from Token
-    const decoded = parseJwt(token);
-    userRole = decoded.role || 'USER';
-    console.log("MY IDENTITY:", username, "| MY ROLE:", userRole); // DEBUG LOG
-    console.log("Full Token Payload:", decoded); // DEBUG LOG
-
-    // Update Avatar on UI
-    if (document.getElementById('displayUsername')) {
-        document.getElementById('displayUsername').textContent = username;
-    }
-    const avatarImg = document.getElementById('headerAvatar');
-    if (avatarImg) {
-        avatarImg.src = `https://api.dicebear.com/7.x/bottts/svg?seed=${username}`;
+    // Update header avatar
+    if (headerAvatar) {
+        headerAvatar.src = `https://api.dicebear.com/7.x/${avatarStyle}/svg?seed=${username}`;
     }
 
-    connect();
-} else {
-    window.location.href = 'index.html';
+    // Update dropdown
+    if (dropdownUsername) dropdownUsername.textContent = username;
+    if (dropdownRole) {
+        const roleText = userRole === 'ADMIN' ? 'Administrator' :
+            userRole === 'MODERATOR' ? 'Moderator' : 'User';
+        dropdownRole.textContent = roleText;
+    }
+
+    // Update dropdown avatar
+    const dropdownAvatar = document.querySelector('.dropdown-header img');
+    if (dropdownAvatar) {
+        dropdownAvatar.src = `https://api.dicebear.com/7.x/${avatarStyle}/svg?seed=${username}`;
+    }
 }
 
-function connect() {
-    if (username) {
-        const socket = new SockJS('/ws');
-        stompClient = Stomp.over(socket);
-        // Disable debug logging for cleaner console
-        stompClient.debug = null;
+// ═══════════════════════════════════════════════════
+// 🔌 WEBSOCKET CONNECTION
+// ═══════════════════════════════════════════════════
+function connectWebSocket() {
+    console.log('🔗 Connecting to WebSocket...');
 
-        stompClient.connect({}, onConnected, onError);
-    }
+    const socket = new SockJS('/ws');
+    stompClient = Stomp.over(socket);
+
+    // Disable debug logs for cleaner console
+    stompClient.debug = null;
+
+    stompClient.connect({}, onConnected, onError);
 }
 
 function onConnected() {
-    // Subscribe to the Public Topic
-    subscription = stompClient.subscribe('/topic/public', onMessageReceived);
+    console.log('✅ WebSocket connected');
 
-    // Tell your username to the server
-    stompClient.send("/app/chat.addUser",
-        {},
-        JSON.stringify({ sender: username, type: 'JOIN' })
-    );
+    // Subscribe to public chat topic
+    stompClient.subscribe('/topic/public', onMessageReceived);
 
-    // Load History
-    fetch('/api/chat/history', {
-        headers: {
-            'Authorization': 'Bearer ' + token
-        }
-    })
-        .then(response => {
-            if (!response.ok) throw new Error("Failed to load history");
-            return response.json();
-        })
-        .then(messages => {
-            messages.forEach(displayMessage);
-        })
-        .catch(console.error);
+    // Announce user joined
+    stompClient.send('/app/chat.addUser', {}, JSON.stringify({
+        sender: username,
+        type: 'JOIN'
+    }));
 
-    // Load Initial Online Users
+    // Fetch initial online users
     fetchOnlineUsers();
 }
 
-function fetchOnlineUsers() {
-    fetch('/api/chat/online', {
-        headers: { 'Authorization': 'Bearer ' + token }
-    })
-        .then(res => res.json())
-        .then(users => {
-            onlineUsers = new Set(users);
-            updateOnlineUI();
-        });
-}
-
 function onError(error) {
-    console.error('WebSocket Error:', error);
+    console.error('❌ WebSocket error:', error);
+
+    showNotification('Connection lost. Reconnecting...', 'error');
+
+    setTimeout(() => {
+        connectWebSocket();
+    }, 5000);
 }
 
+function onMessageReceived(payload) {
+    try {
+        const message = JSON.parse(payload.body);
+
+        if (message.type === 'JOIN') {
+            onlineUsers.add(message.sender);
+            refreshMembersLists();
+            displayEventMessage(`${message.sender} joined the chat`);
+        } else if (message.type === 'LEAVE') {
+            onlineUsers.delete(message.sender);
+            refreshMembersLists();
+            displayEventMessage(`${message.sender} left the chat`);
+        } else if (message.type === 'CHAT') {
+            displayChatMessage(message);
+        }
+    } catch (error) {
+        console.error('Error processing message:', error);
+    }
+}
+
+// ═══════════════════════════════════════════════════
+// 💬 MESSAGE HANDLING
+// ═══════════════════════════════════════════════════
 function sendMessage(event) {
     if (event) event.preventDefault();
 
-    const messageContent = document.querySelector('#chatInput').value.trim();
+    const messageContent = chatInput.value.trim();
+    if (!messageContent) return;
 
-    if (messageContent && stompClient) {
-        const chatMessage = {
-            sender: username,
-            content: messageContent,
-            type: 'CHAT'
-        };
-        stompClient.send("/app/chat.sendMessage", {}, JSON.stringify(chatMessage));
-        document.querySelector('#chatInput').value = '';
+    if (!stompClient || !stompClient.connected) {
+        showNotification('Not connected to server', 'error');
+        return;
+    }
+
+    const chatMessage = {
+        sender: username,
+        content: messageContent,
+        type: 'CHAT',
+        timestamp: new Date().toISOString()
+    };
+
+    try {
+        stompClient.send('/app/chat.sendMessage', {}, JSON.stringify(chatMessage));
+        chatInput.value = '';
+        charCount.textContent = '0';
+    } catch (error) {
+        console.error('Failed to send message:', error);
+        showNotification('Failed to send message', 'error');
     }
 }
 
-document.getElementById('chatInput').addEventListener('keypress', function (e) {
-    if (e.key === 'Enter') {
-        sendMessage();
-    }
-});
-
-function onMessageReceived(payload) {
-    const message = JSON.parse(payload.body);
-
-    // Handle Online Functionality
-    if (message.type === 'JOIN') {
-        onlineUsers.add(message.sender);
-        updateOnlineUI();
-    } else if (message.type === 'LEAVE') {
-        onlineUsers.delete(message.sender);
-        updateOnlineUI();
-    }
-
-    // If it's a DELETE notification, we might want to just reload or remove via ID
-    // For now we just display new messages.
-    displayMessage(message);
-}
-
-function updateOnlineUI() {
-    if (!onlineMembersList) return;
-    onlineMembersList.innerHTML = '';
-
-    onlineUsers.forEach(user => {
-        const item = document.createElement('div');
-        item.classList.add('online-member-item');
-        item.innerHTML = `
-            <div class="member-avatar">${user.charAt(0).toUpperCase()}</div>
-            <div class="member-info">
-                <span class="member-name">${user}</span>
-            </div>
-            <div class="status-dot"></div>
-        `;
-        onlineMembersList.appendChild(item);
-    });
-}
-
-
-function displayMessage(message) {
+function displayChatMessage(message) {
     const messageElement = document.createElement('div');
     messageElement.classList.add('message');
-    // If message has ID, set it for DOM manip (deletion)
-    if (message.id) messageElement.setAttribute('data-id', message.id);
+    messageElement.setAttribute('data-id', message.id || '');
 
-    if (message.type === 'JOIN') {
-        messageElement.classList.add('event-message');
-        message.content = message.sender + ' joined!';
-        const textElement = document.createElement('div');
-        textElement.classList.add('message-text');
-        textElement.textContent = message.content;
-        messageElement.appendChild(textElement);
+    // Debug: Log comparison
+    console.log(`Comparing sender: "${message.sender}" vs username: "${username}" => ${message.sender === username}`);
 
-    } else if (message.type === 'LEAVE') {
-        messageElement.classList.add('event-message');
-        message.content = message.sender + ' left!';
-        const textElement = document.createElement('div');
-        textElement.classList.add('message-text');
-        textElement.textContent = message.content;
-        messageElement.appendChild(textElement);
+    const isOwnMessage = message.sender === username;
+    messageElement.classList.add(isOwnMessage ? 'message-sent' : 'message-received');
 
-    } else {
-        // Chat Message
-        if (message.sender === username) {
-            messageElement.classList.add('message-sent');
-        } else {
-            messageElement.classList.add('message-received');
-        }
+    // Message header
+    const header = document.createElement('div');
+    header.classList.add('message-header');
 
-        // Message DOM Construction
-        // New Structure: 
-        // .message
-        //    .message-meta (Sender Name + Badge) -> Left aligned
-        //    .message-content (Bubble)
-        //    .timestamp
-
-        // Sender Meta
-        if (message.sender !== username) {
-            const meta = document.createElement('div');
-            meta.classList.add('message-meta');
-
-            let senderHtml = `<span class="sender-name">${message.sender}</span>`;
-            const role = message.senderRole || 'USER';
-            if (role === 'ADMIN') senderHtml += ` <span class="role-badge badge-admin">ADMIN</span>`;
-            else if (role === 'MODERATOR') senderHtml += ` <span class="role-badge badge-mod">MOD</span>`;
-
-            meta.innerHTML = senderHtml;
-            messageElement.appendChild(meta);
-        }
-
-        // Content Bubble
-        const contentDiv = document.createElement('div');
-        contentDiv.classList.add('message-content');
-        contentDiv.textContent = message.content;
-
-        // Delete Button (Inside bubble or next to it? Let's put inside for clean look or use old logic)
-        // Design calls for premium look. Let's append delete button to contentDiv if allowed
-        if (canDelete(message)) {
-            const delBtn = document.createElement('button');
-            delBtn.innerHTML = '<i class="fas fa-trash"></i>';
-            delBtn.style.cssText = "background:none; border:none; color:rgba(255,255,255,0.5); cursor:pointer; margin-left:10px;";
-            delBtn.onclick = (e) => { e.stopPropagation(); deleteMessage(message.id, messageElement); };
-            contentDiv.appendChild(delBtn);
-        }
-
-        messageElement.appendChild(contentDiv);
-
-        // Timestamp
-        const timeDiv = document.createElement('div');
-        timeDiv.classList.add('timestamp');
-        const date = message.timestamp ? new Date(message.timestamp) : new Date();
-        timeDiv.textContent = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        messageElement.appendChild(timeDiv);
+    if (isOwnMessage) {
+        header.style.flexDirection = 'row-reverse';
+        header.style.justifyContent = 'flex-start';
     }
 
-    messageArea.appendChild(messageElement);
-    messageArea.scrollTop = messageArea.scrollHeight;
+    const avatar = document.createElement('img');
+    // Look up avatar style from server cache
+    const senderInfo = allUsersCache.find(u => u.username === message.sender);
+    const avatarStyle = senderInfo?.avatarStyle || 'initials';
+    avatar.src = `https://api.dicebear.com/7.x/${avatarStyle}/svg?seed=${message.sender}`;
+    avatar.alt = message.sender;
+    avatar.classList.add('message-avatar');
+    header.appendChild(avatar);
+
+    const senderName = document.createElement('span');
+    senderName.classList.add('message-sender');
+    senderName.textContent = message.sender;
+    header.appendChild(senderName);
+
+    // Role badge
+    const role = message.senderRole || 'USER';
+    if (role === 'ADMIN') {
+        const badge = document.createElement('span');
+        badge.classList.add('role-badge', 'badge-admin');
+        badge.textContent = 'ADMIN';
+        header.appendChild(badge);
+    } else if (role === 'MODERATOR') {
+        const badge = document.createElement('span');
+        badge.classList.add('role-badge', 'badge-mod');
+        badge.textContent = 'MOD';
+        header.appendChild(badge);
+    }
+
+    messageElement.appendChild(header);
+
+    // Message bubble
+    const bubble = document.createElement('div');
+    bubble.classList.add('message-bubble');
+    bubble.textContent = message.content;
+
+    // Delete button (if user can delete)
+    if (canDeleteMessage(message)) {
+        const deleteBtn = document.createElement('button');
+        deleteBtn.innerHTML = '<i class="fas fa-trash"></i>';
+        deleteBtn.classList.add('delete-message-btn');
+        deleteBtn.style.cssText = `
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.5);
+            cursor: pointer;
+            margin-left: 10px;
+            padding: 4px 8px;
+            border-radius: 6px;
+            transition: all 0.2s;
+        `;
+        deleteBtn.onmouseover = () => deleteBtn.style.background = 'rgba(255, 82, 82, 0.2)';
+        deleteBtn.onmouseout = () => deleteBtn.style.background = 'none';
+        deleteBtn.onclick = (e) => {
+            e.stopPropagation();
+            deleteMessage(message.id, messageElement);
+        };
+        bubble.appendChild(deleteBtn);
+    }
+
+    messageElement.appendChild(bubble);
+
+    // Timestamp
+    const timestamp = document.createElement('div');
+    timestamp.classList.add('message-timestamp');
+    const date = message.timestamp ? new Date(message.timestamp) : new Date();
+    timestamp.textContent = date.toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+    messageElement.appendChild(timestamp);
+
+    // Append to chat
+    chatMessages.appendChild(messageElement);
+    scrollToBottom();
 }
 
-function canDelete(message) {
-    if (!userRole) return false;
-    if (!message.id) return false; // Needs ID to delete
+function displayEventMessage(text) {
+    const eventElement = document.createElement('div');
+    eventElement.classList.add('event-message');
+    eventElement.textContent = text;
+    chatMessages.appendChild(eventElement);
+    scrollToBottom();
+}
 
-    if (userRole === 'ADMIN') return true; // Admin deletes all
+function canDeleteMessage(message) {
+    if (!userRole || !message.id) return false;
+
+    if (userRole === 'ADMIN') return true;
 
     if (userRole === 'MODERATOR') {
-        // Mod can delete anyone EXCEPT Admin
         const msgRole = message.senderRole || 'USER';
         return msgRole !== 'ADMIN';
     }
 
     if (userRole === 'USER') {
-        // User deletes only own
         return message.sender === username;
     }
 
     return false;
 }
 
-function deleteMessage(id, element) {
-    if (!confirm("Are you sure you want to delete this message?")) return;
+function deleteMessage(messageId, messageElement) {
+    if (!confirm('Are you sure you want to delete this message?')) return;
 
-    fetch(`/api/chat/${id}`, {
+    fetch(`/api/chat/${messageId}`, {
         method: 'DELETE',
         headers: {
             'Authorization': 'Bearer ' + token
         }
     })
-        .then(res => {
-            if (res.ok) {
-                element.remove(); // Remove from UI immediately
+        .then(response => {
+            if (response.ok) {
+                messageElement.remove();
+                showNotification('Message deleted', 'success');
             } else {
-                alert('Failed to delete message');
+                throw new Error('Failed to delete message');
             }
+        })
+        .catch(error => {
+            console.error('Delete error:', error);
+            showNotification('Failed to delete message', 'error');
         });
 }
 
-// Logout
-document.getElementById('logoutBtn').addEventListener('click', () => {
-    localStorage.removeItem('jwt_token');
-    localStorage.removeItem('user_info');
-    if (stompClient) stompClient.disconnect();
-    window.location.href = 'index.html';
-});
+function scrollToBottom() {
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
 
-// Character counter
-const chatInput = document.getElementById('chatInput');
-const charCount = document.getElementById('charCount');
+// ═══════════════════════════════════════════════════
+// 📚 DATA LOADING
+// ═══════════════════════════════════════════════════
+function loadChatHistory() {
+    fetch('/api/chat/history', {
+        headers: {
+            'Authorization': 'Bearer ' + token
+        }
+    })
+        .then(response => {
+            if (!response.ok) throw new Error('Failed to load history');
+            return response.json();
+        })
+        .then(messages => {
+            console.log(`📚 Loaded ${messages.length} messages`);
+            messages.forEach(message => {
+                if (message.type === 'CHAT') {
+                    displayChatMessage(message);
+                }
+            });
+        })
+        .catch(error => {
+            console.error('Error loading chat history:', error);
+        });
+}
 
-chatInput.addEventListener('input', () => {
-    charCount.textContent = chatInput.value.length;
-});
+function fetchOnlineUsers() {
+    fetch('/api/chat/online', {
+        headers: {
+            'Authorization': 'Bearer ' + token
+        }
+    })
+        .then(response => response.json())
+        .then(users => {
+            onlineUsers = new Set(users);
+            refreshMembersLists();
+            console.log(`👥 ${onlineUsers.size} users online`);
+        })
+        .catch(error => {
+            console.error('Error fetching online users:', error);
+        });
+}
 
-// User dropdown toggle
-const userAvatarBtn = document.getElementById('userAvatarBtn');
-const userDropdown = document.getElementById('userDropdown');
+function loadAllUsers() {
+    fetch('/api/users', {
+        headers: {
+            'Authorization': 'Bearer ' + token
+        }
+    })
+        .then(response => response.json())
+        .then(users => {
+            console.log(`📋 Total users: ${users.length}`);
+            allUsersCache = users;
 
-// Profile modal
-function showProfileModal(username) {
+            if (totalMembersDisplay) {
+                totalMembersDisplay.textContent = users.length;
+            }
+
+            // Update UI with server avatar styles
+            updateUserUI();
+            refreshMembersLists();
+        })
+        .catch(error => {
+            console.error('Error loading users:', error);
+        });
+}
+
+// ═══════════════════════════════════════════════════
+// 👥 MEMBERS UI UPDATE - FIXED
+// ═══════════════════════════════════════════════════
+function refreshMembersLists() {
+    // Update online count
+    const onlineCount = onlineUsers.size;
+    if (onlineCountDisplay) onlineCountDisplay.textContent = onlineCount;
+    if (onlineCountSidebar) onlineCountSidebar.textContent = onlineCount;
+
+    // Clear both lists
+    if (onlineMembersList) onlineMembersList.innerHTML = '';
+    if (offlineMembersList) offlineMembersList.innerHTML = '';
+
+    // Populate online members
+    onlineUsers.forEach(user => {
+        if (onlineMembersList) {
+            const memberItem = createMemberItem(user, true);
+            onlineMembersList.appendChild(memberItem);
+        }
+    });
+
+    // Populate offline members
+    if (allUsersCache.length > 0) {
+        const offlineUsers = allUsersCache.filter(user => !onlineUsers.has(user.username));
+
+        if (offlineCountDisplay) {
+            offlineCountDisplay.textContent = offlineUsers.length;
+        }
+
+        offlineUsers.forEach(user => {
+            if (offlineMembersList) {
+                const memberItem = createMemberItem(user.username, false);
+                offlineMembersList.appendChild(memberItem);
+            }
+        });
+    }
+}
+
+function createMemberItem(memberUsername, isOnline) {
+    const memberItem = document.createElement('div');
+    memberItem.classList.add('member-item');
+
+    // Look up avatar style from server cache
+    const userInfo = allUsersCache.find(u => u.username === memberUsername);
+    const avatarStyle = userInfo?.avatarStyle || 'initials';
+
+    memberItem.innerHTML = `
+        <div class="member-avatar-wrapper">
+            <img src="https://api.dicebear.com/7.x/${avatarStyle}/svg?seed=${memberUsername}" 
+                 class="member-avatar" 
+                 alt="${memberUsername}">
+            <div class="status-dot ${isOnline ? 'online' : 'offline'}"></div>
+        </div>
+        <div class="member-info">
+            <span class="member-name">${memberUsername}${memberUsername === username ? ' (You)' : ''}</span>
+            <span class="member-status">${isOnline ? 'Online' : 'Offline'}</span>
+        </div>
+    `;
+
+    // Click to show profile (view-only for members list)
+    memberItem.addEventListener('click', () => showProfileModal(memberUsername, false));
+
+    return memberItem;
+}
+
+// ═══════════════════════════════════════════════════
+// 🎭 PROFILE MODAL - FIXED
+// ═══════════════════════════════════════════════════
+function openEditProfileModal() {
+    // Open profile modal in edit mode for current user
+    showProfileModal(username, true);
+}
+
+function showProfileModal(targetUsername, allowEdit = false) {
     const modal = document.getElementById('profileModal');
     const modalAvatar = document.getElementById('modalAvatar');
     const modalUsername = document.getElementById('modalUsername');
-    
-    modalAvatar.src = `https://api.dicebear.com/7.x/bottts/svg?seed=${username}`;
-    modalUsername.textContent = username;
-    
+    const modalRole = document.getElementById('modalRole');
+    const profileBody = document.querySelector('.profile-body');
+
+    // Use saved avatar style for current user
+    const isMe = targetUsername === username;
+    const avatarStyle = isMe ? (localStorage.getItem('avatar_style') || 'initials') : 'initials';
+
+    if (modalAvatar) {
+        modalAvatar.src = `https://api.dicebear.com/7.x/${avatarStyle}/svg?seed=${targetUsername}`;
+    }
+
+    // Reset username display to text (not input)
+    if (modalUsername) {
+        modalUsername.textContent = targetUsername;
+    }
+
+    const actionBtn = profileBody.querySelector('.btn-primary');
+
+    // Only show edit option if:
+    // 1. It's me AND
+    // 2. allowEdit is true (clicked from header dropdown)
+    if (isMe && allowEdit) {
+        actionBtn.innerHTML = '<i class="fas fa-edit"></i> Edit Profile';
+        actionBtn.onclick = () => enableEditMode(profileBody, targetUsername);
+    } else if (isMe && !allowEdit) {
+        // It's me but clicked from members list - show view only
+        actionBtn.innerHTML = '<i class="fas fa-user"></i> Your Profile';
+        actionBtn.onclick = () => closeProfileModal();
+    } else {
+        // It's someone else - show send message button
+        actionBtn.innerHTML = '<i class="fas fa-comment"></i> Send Message';
+        actionBtn.onclick = () => {
+            closeProfileModal();
+            alert('Private messaging coming soon!');
+        };
+    }
+
+    if (modalRole) {
+        modalRole.textContent = 'Member';
+    }
+
     modal.classList.add('active');
 }
 
-document.querySelector('.modal-close').addEventListener('click', () => {
-    document.getElementById('profileModal').classList.remove('active');
-});
+function enableEditMode(container, currentName) {
+    const nameEl = document.getElementById('modalUsername');
+    nameEl.innerHTML = `<input type="text" id="editUsernameInput" value="${currentName}" class="edit-input" />`;
 
-// Enhanced message rendering
-function displayMessage(message) {
-    const messageElement = document.createElement('div');
-    messageElement.classList.add('message');
-    
-    if (message.type === 'CHAT') {
-        const isOwn = message.sender === username;
-        messageElement.classList.add(isOwn ? 'message-sent' : 'message-received');
-        
-        if (!isOwn) {
-            const header = document.createElement('div');
-            header.classList.add('message-header');
-            header.innerHTML = `
-                <img src="https://api.dicebear.com/7.x/bottts/svg?seed=${message.sender}" 
-                     class="message-avatar" alt="${message.sender}">
-                <span class="message-sender">${message.sender}</span>
-                ${message.senderRole === 'ADMIN' ? '<span class="role-badge badge-admin">Admin</span>' : ''}
-                ${message.senderRole === 'MODERATOR' ? '<span class="role-badge badge-mod">Mod</span>' : ''}
-            `;
-            messageElement.appendChild(header);
-        }
-        
-        const bubble = document.createElement('div');
-        bubble.classList.add('message-bubble');
-        bubble.textContent = message.content;
-        messageElement.appendChild(bubble);
-        
-        const timestamp = document.createElement('div');
-        timestamp.classList.add('message-timestamp');
-        const date = message.timestamp ? new Date(message.timestamp) : new Date();
-        timestamp.textContent = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        messageElement.appendChild(timestamp);
-        
-    } else {
-        // Event message (JOIN/LEAVE)
-        messageElement.classList.add('event-message');
-        messageElement.textContent = `${message.sender} ${message.type === 'JOIN' ? 'joined' : 'left'} the chat`;
-    }
-    
-    messageArea.appendChild(messageElement);
-    messageArea.scrollTop = messageArea.scrollHeight;
-}
-
-// Update online members UI
-function updateOnlineUI() {
-    const onlineMembersList = document.getElementById('onlineMembersList');
-    const onlineCountSidebar = document.getElementById('onlineCountSidebar');
-    const onlineCount = document.getElementById('onlineCount');
-    
-    onlineMembersList.innerHTML = '';
-    onlineCountSidebar.textContent = onlineUsers.size;
-    onlineCount.textContent = onlineUsers.size;
-    
-    onlineUsers.forEach(user => {
-        const memberItem = document.createElement('div');
-        memberItem.classList.add('member-item');
-        memberItem.innerHTML = `
-            <div class="member-avatar-wrapper">
-                <img src="https://api.dicebear.com/7.x/bottts/svg?seed=${user}" 
-                     class="member-avatar" alt="${user}">
-                <div class="status-dot online"></div>
-            </div>
-            <div class="member-info">
-                <span class="member-name">${user}</span>
-                <span class="member-status">Online</span>
+    // Add image selector below avatar
+    const avatarContainer = container.querySelector('.profile-avatar');
+    if (avatarContainer && !document.getElementById('avatarSelector')) {
+        const selectorHtml = `
+            <div id="avatarSelector" style="margin-top: 10px; text-align: center;">
+                <label style="display: block; margin-bottom: 8px; color: var(--text-secondary); font-size: 0.85rem;">Choose Avatar Style:</label>
+                <select id="avatarStyleSelect" class="edit-input" style="font-size: 1rem; padding: 10px;">
+                    <option value="initials">Initials</option>
+                    <option value="bottts">Robots</option>
+                    <option value="avataaars">Avatars</option>
+                    <option value="fun-emoji">Emoji</option>
+                    <option value="pixel-art">Pixel Art</option>
+                    <option value="lorelei">Lorelei</option>
+                </select>
             </div>
         `;
-        
-        memberItem.addEventListener('click', () => showProfileModal(user));
-        onlineMembersList.appendChild(memberItem);
+        avatarContainer.insertAdjacentHTML('afterend', selectorHtml);
+
+        // Preview avatar on change
+        document.getElementById('avatarStyleSelect').addEventListener('change', (e) => {
+            const style = e.target.value;
+            const previewName = document.getElementById('editUsernameInput')?.value || currentName;
+            document.getElementById('modalAvatar').src = `https://api.dicebear.com/7.x/${style}/svg?seed=${previewName}`;
+        });
+    }
+
+    const actionBtn = container.querySelector('.btn-primary');
+    actionBtn.innerHTML = '<i class="fas fa-save"></i> Save Changes';
+    actionBtn.onclick = () => saveProfile();
+}
+
+function saveProfile() {
+    const newName = document.getElementById('editUsernameInput').value.trim();
+    const avatarStyle = document.getElementById('avatarStyleSelect')?.value || 'initials';
+
+    if (!newName) return alert("Username cannot be empty");
+
+    fetch('/api/users/profile', {
+        method: 'PUT',
+        headers: {
+            'Authorization': 'Bearer ' + token,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ username: newName, avatarStyle: avatarStyle })
+    })
+        .then(res => res.json())
+        .then(data => {
+            if (data.usernameChanged) {
+                alert('Profile updated! Please login again.');
+                handleLogout();
+            } else if (data.message) {
+                // Reload users to get updated avatarStyle from server
+                loadAllUsers();
+
+                // Update header avatars in UI
+                const style = data.avatarStyle || avatarStyle;
+                if (headerAvatar) {
+                    headerAvatar.src = `https://api.dicebear.com/7.x/${style}/svg?seed=${username}`;
+                }
+                const dropdownAvatar = document.querySelector('.dropdown-header img');
+                if (dropdownAvatar) {
+                    dropdownAvatar.src = `https://api.dicebear.com/7.x/${style}/svg?seed=${username}`;
+                }
+                showNotification('Avatar style updated!', 'success');
+                closeProfileModal();
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert('Failed to update profile');
+        });
+}
+
+function closeProfileModal() {
+    // Remove avatar selector on close
+    const selector = document.getElementById('avatarSelector');
+    if (selector) selector.remove();
+
+    profileModal.classList.remove('active');
+}
+
+// ═══════════════════════════════════════════════════
+// 🎯 EVENT LISTENERS
+// ═══════════════════════════════════════════════════
+function setupEventListeners() {
+    // Send message on button click
+    if (sendBtn) {
+        sendBtn.addEventListener('click', sendMessage);
+    }
+
+    // Send message on Enter key
+    if (chatInput) {
+        chatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        // Character counter
+        chatInput.addEventListener('input', () => {
+            if (charCount) {
+                charCount.textContent = chatInput.value.length;
+            }
+        });
+    }
+
+    // Logout
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', handleLogout);
+    }
+
+    // Profile Dropdown Item - Opens edit mode
+    const profileMenuItem = document.getElementById('profileMenuItem');
+    if (profileMenuItem) {
+        profileMenuItem.addEventListener('click', (e) => {
+            e.preventDefault();
+            openEditProfileModal(); // Opens with edit capability
+        });
+    }
+
+    // Close modal
+    if (modalClose) {
+        modalClose.addEventListener('click', closeProfileModal);
+    }
+
+    // Close modal on backdrop click
+    if (profileModal) {
+        profileModal.addEventListener('click', (e) => {
+            if (e.target === profileModal) {
+                closeProfileModal();
+            }
+        });
+    }
+
+    // Close modal on Escape key
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && profileModal.classList.contains('active')) {
+            closeProfileModal();
+        }
+    });
+
+    // Tab switching
+    const tabButtons = document.querySelectorAll('.tab-btn');
+    tabButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            tabButtons.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            const tab = btn.getAttribute('data-tab');
+            console.log('Switched to tab:', tab);
+        });
     });
 }
+
+// ═══════════════════════════════════════════════════
+// 🚪 LOGOUT
+// ═══════════════════════════════════════════════════
+function handleLogout() {
+    // Disconnect WebSocket
+    if (stompClient && stompClient.connected) {
+        stompClient.send('/app/chat.removeUser', {}, JSON.stringify({
+            sender: username,
+            type: 'LEAVE'
+        }));
+        stompClient.disconnect();
+    }
+
+    // Clear localStorage
+    localStorage.removeItem('jwt_token');
+    localStorage.removeItem('user_info');
+
+    // Redirect to login
+    window.location.href = 'index.html';
+}
+
+// ═══════════════════════════════════════════════════
+// 🔔 NOTIFICATIONS
+// ═══════════════════════════════════════════════════
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    notification.textContent = message;
+    notification.style.cssText = `
+        position: fixed;
+        top: 90px;
+        right: 20px;
+        background: ${type === 'error' ? '#FF5252' : type === 'success' ? '#00E676' : '#5B7FFF'};
+        color: white;
+        padding: 16px 24px;
+        border-radius: 12px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        z-index: 9999;
+        animation: slideInRight 0.3s ease;
+        font-weight: 500;
+        font-size: 0.9rem;
+    `;
+
+    document.body.appendChild(notification);
+
+    setTimeout(() => {
+        notification.style.animation = 'slideOutRight 0.3s ease';
+        setTimeout(() => {
+            notification.remove();
+        }, 300);
+    }, 3000);
+}
+
+// ═══════════════════════════════════════════════════
+// 🎨 UTILITY FUNCTIONS
+// ═══════════════════════════════════════════════════
+function formatTimestamp(date) {
+    return new Date(date).toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+}
+
+function smoothScrollToBottom() {
+    chatMessages.scrollTo({
+        top: chatMessages.scrollHeight,
+        behavior: 'smooth'
+    });
+}
+
+function isAtBottom() {
+    const threshold = 100;
+    return chatMessages.scrollHeight - chatMessages.scrollTop - chatMessages.clientHeight < threshold;
+}
+
+// Add CSS animations
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes slideInRight {
+        from {
+            transform: translateX(400px);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+
+    @keyframes slideOutRight {
+        from {
+            transform: translateX(0);
+            opacity: 1;
+        }
+        to {
+            transform: translateX(400px);
+            opacity: 0;
+        }
+    }
+
+    .delete-message-btn:hover {
+        background: rgba(255, 82, 82, 0.2) !important;
+        color: #FF5252 !important;
+    }
+`;
+document.head.appendChild(style);
+
+// ═══════════════════════════════════════════════════
+// 🔄 PERIODIC UPDATES
+// ═══════════════════════════════════════════════════
+setInterval(() => {
+    if (stompClient && stompClient.connected) {
+        fetchOnlineUsers();
+    }
+}, 30000);
