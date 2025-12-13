@@ -3,90 +3,245 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Chill Space | Home</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
-        rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chill Space - Modern Chat Platform</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Essential CSS -->
-    <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/home.css">
 </head>
 
 <body>
+    <!-- Animated Background -->
+    <div class="animated-bg">
+        <div class="gradient-orb orb-1"></div>
+        <div class="gradient-orb orb-2"></div>
+        <div class="gradient-orb orb-3"></div>
+    </div>
 
-    <header>
-        <div class="logo">
-            <img src="Assets/logo1.svg" alt="Logo" width="40" height="40">
-            <div class="animated-text-container">
-                <span class="cyber-animated-text">CHILL SPACE</span>
-            </div>
-        </div>
-        <div class="header-actions">
-            <!-- User Info Display -->
-            <div class="user-info">
-                <div class="user-avatar">
-                    <img src="Assets/pfp2.jpg" alt="Profile">
+    <!-- Main App Container -->
+    <div class="app-wrapper">
+        
+        <!-- Top Navigation Bar -->
+        <nav class="top-navbar">
+            <div class="nav-left">
+                <div class="logo-container">
+                    <div class="logo-icon">
+                        <i class="fas fa-rocket"></i>
+                    </div>
+                    <div class="logo-text">
+                        <h1>CHILL SPACE</h1>
+                        <span class="tagline">Where vibes meet</span>
+                    </div>
                 </div>
-                <!-- Username will be injected by JS -->
-                <span id="username">User</span>
             </div>
 
-            <button id="logoutBtn">
-                <i class="fas fa-sign-out-alt"></i>
-                <span class="desktop-only">Logout</span>
-            </button>
-        </div>
-    </header>
+            <div class="nav-center">
+                <div class="tab-switcher">
+                    <button class="tab-btn active" data-tab="chat">
+                        <i class="fas fa-comments"></i>
+                        <span>Chat</span>
+                    </button>
+                    <button class="tab-btn" data-tab="files">
+                        <i class="fas fa-folder"></i>
+                        <span>Files</span>
+                    </button>
+                    <button class="tab-btn" data-tab="games">
+                        <i class="fas fa-gamepad"></i>
+                        <span>Games</span>
+                    </button>
+                </div>
+            </div>
 
-    <main>
-        <div class="main-content">
+            <div class="nav-right">
+                <button class="icon-button notification-btn">
+                    <i class="fas fa-bell"></i>
+                    <span class="badge">3</span>
+                </button>
+                
+                <div class="user-menu">
+                    <div class="user-avatar-btn" id="userAvatarBtn">
+                        <img src="https://api.dicebear.com/7.x/bottts/svg?seed=User" id="headerAvatar" alt="Avatar">
+                        <div class="status-dot online"></div>
+                    </div>
+                    <div class="dropdown-menu" id="userDropdown">
+                        <div class="dropdown-header">
+                            <img src="https://api.dicebear.com/7.x/bottts/svg?seed=User" alt="Avatar">
+                            <div>
+                                <h4 id="dropdownUsername">Username</h4>
+                                <p id="dropdownRole">User</p>
+                            </div>
+                        </div>
+                        <div class="dropdown-divider"></div>
+                        <a href="#" class="dropdown-item"><i class="fas fa-user"></i> Profile</a>
+                        <a href="#" class="dropdown-item"><i class="fas fa-cog"></i> Settings</a>
+                        <a href="#" class="dropdown-item"><i class="fas fa-moon"></i> Dark Mode</a>
+                        <div class="dropdown-divider"></div>
+                        <a href="#" class="dropdown-item danger" id="logoutBtn">
+                            <i class="fas fa-sign-out-alt"></i> Logout
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </nav>
 
-            <!-- Chat Container -->
-            <!-- We use 'chat-container' class from home.css -->
+        <!-- Main Content Area -->
+        <div class="main-container">
+            
+            <!-- Chat Section -->
             <section class="chat-container">
+                
+                <!-- Chat Header -->
+                <div class="chat-header">
+                    <div class="chat-info">
+                        <h2><i class="fas fa-hashtag"></i> general</h2>
+                        <p><span class="online-indicator"></span> <span id="onlineCount">0</span> members online</p>
+                    </div>
+                    <div class="chat-actions">
+                        <button class="icon-button"><i class="fas fa-search"></i></button>
+                        <button class="icon-button"><i class="fas fa-users"></i></button>
+                        <button class="icon-button"><i class="fas fa-ellipsis-v"></i></button>
+                    </div>
+                </div>
 
-                <!-- Chat Messages Area -->
-                <div class="chat-messages" id="chatMessages">
-                    <!-- Messages will be injected here by chat.js -->
-                    <div class="message event-message">
-                        <div class="message-text" style="text-align:center; color: var(--text-muted);">
-                            Welcome to the start of the chat! 🚀
+                <!-- Messages Area -->
+                <div class="messages-container" id="chatMessages">
+                    <!-- Welcome Message -->
+                    <div class="welcome-card">
+                        <div class="welcome-icon">
+                            <i class="fas fa-rocket"></i>
+                        </div>
+                        <h3>Welcome to #general</h3>
+                        <p>This is the beginning of your legendary journey!</p>
+                    </div>
+                </div>
+
+                <!-- Typing Indicator -->
+                <div class="typing-indicator" id="typingIndicator" style="display: none;">
+                    <div class="typing-avatar">
+                        <img src="https://api.dicebear.com/7.x/bottts/svg?seed=typing" alt="">
+                    </div>
+                    <div class="typing-text">
+                        <span class="typing-user">Someone</span> is typing
+                        <div class="typing-dots">
+                            <span></span>
+                            <span></span>
+                            <span></span>
                         </div>
                     </div>
                 </div>
 
-                <!-- Input Area -->
-                <div class="chat-input-wrapper" style="padding: 1.5rem; background: rgba(0,0,0,0.2);">
-                    <div class="chat-input" style="display:flex; gap:10px; width:100%;">
-                        <input type="text" id="chatInput" class="glass-input" placeholder="Type your message..."
-                            style="flex:1; padding: 15px; border-radius: 12px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white;">
+                <!-- Message Input -->
+                <div class="message-input-container">
+                    <div class="input-wrapper">
+                        <button class="input-icon-btn" title="Attach File">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                        
+                        <div class="input-field-wrapper">
+                            <input 
+                                type="text" 
+                                id="chatInput" 
+                                placeholder="Message #general..."
+                                autocomplete="off"
+                                maxlength="2000"
+                            />
+                            <div class="input-actions">
+                                <button class="emoji-btn" title="Add Emoji">
+                                    <i class="fas fa-smile"></i>
+                                </button>
+                                <button class="gif-btn" title="Send GIF">
+                                    <i class="fas fa-gift"></i>
+                                </button>
+                                <button class="sticker-btn" title="Send Sticker">
+                                    <i class="fas fa-star"></i>
+                                </button>
+                            </div>
+                        </div>
 
-                        <button class="btn btn-primary" onclick="sendMessage()"
-                            style="width: 50px; height: 50px; border-radius: 12px; background: var(--primary); color: white; border: none; cursor: pointer;">
+                        <button class="send-button" id="sendBtn">
                             <i class="fas fa-paper-plane"></i>
                         </button>
+                    </div>
+                    <div class="input-footer">
+                        <span class="char-count"><span id="charCount">0</span>/2000</span>
                     </div>
                 </div>
 
             </section>
 
-        </div>
-    </main>
+            <!-- Right Sidebar -->
+            <aside class="members-sidebar">
+                
+                <!-- Sidebar Header -->
+                <div class="sidebar-header">
+                    <h3>Members</h3>
+                    <span class="member-count" id="totalMembers">0</span>
+                </div>
 
-    <!-- Dependencies for WebSocket -->
+                <!-- Search Members -->
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" placeholder="Search members..." id="searchMembers">
+                </div>
+
+                <!-- Online Members -->
+                <div class="members-section">
+                    <div class="section-title">
+                        <span class="status-dot online"></span>
+                        ONLINE — <span id="onlineCountSidebar">0</span>
+                    </div>
+                    <div class="members-list" id="onlineMembersList">
+                        <!-- Populated via JS -->
+                    </div>
+                </div>
+
+                <!-- Offline Members -->
+                <div class="members-section">
+                    <div class="section-title">
+                        <span class="status-dot offline"></span>
+                        OFFLINE — <span id="offlineCount">0</span>
+                    </div>
+                    <div class="members-list" id="offlineMembersList">
+                        <!-- Populated via JS -->
+                    </div>
+                </div>
+
+            </aside>
+
+        </div>
+    </div>
+
+    <!-- Member Profile Modal -->
+    <div class="modal" id="profileModal">
+        <div class="modal-content profile-card">
+            <button class="modal-close"><i class="fas fa-times"></i></button>
+            <div class="profile-banner"></div>
+            <div class="profile-body">
+                <div class="profile-avatar">
+                    <img src="" alt="" id="modalAvatar">
+                    <div class="status-dot online"></div>
+                </div>
+                <h2 id="modalUsername">Username</h2>
+                <p class="profile-role" id="modalRole">User</p>
+                <div class="profile-stats">
+                    <div class="stat">
+                        <span class="stat-value">24</span>
+                        <span class="stat-label">Messages</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-value">12</span>
+                        <span class="stat-label">Days Active</span>
+                    </div>
+                </div>
+                <button class="btn-primary"><i class="fas fa-comment"></i> Send Message</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.6.1/sockjs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
-
-    <!-- Client Logic -->
     <script src="js/chat.js"></script>
 
-    <script>
-        // Simple script to set username in header
-        const user = JSON.parse(localStorage.getItem('user_info'));
-        if (user) {
-            document.getElementById('username').textContent = user.username;
-        }
-    </script>
 </body>
-
 </html>

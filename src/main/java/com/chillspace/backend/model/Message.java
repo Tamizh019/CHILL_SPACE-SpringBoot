@@ -26,6 +26,9 @@ public class Message {
 
     private String sender; // Username
 
+    @Enumerated(EnumType.STRING)
+    private Role senderRole; // To display badge in UI
+
     private LocalDateTime timestamp;
 
     @PrePersist

@@ -26,8 +26,9 @@ public class User {
     @Column(nullable = false)
     private String password;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String role = "user"; // Default role
+    private Role role = Role.USER; // Default role
 
     private String avatarUrl;
 

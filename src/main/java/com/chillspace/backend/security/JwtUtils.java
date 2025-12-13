@@ -15,9 +15,10 @@ public class JwtUtils {
 
     private final Key key = Keys.hmacShaKeyFor(JWT_SECRET.getBytes());
 
-    public String generateToken(String username) {
+    public String generateToken(String username, String role) {
         return Jwts.builder()
                 .setSubject(username)
+                .claim("role", role)
                 .setIssuedAt(new Date())
                 .setExpiration(new Date((new Date()).getTime() + JWT_EXPIRATION_MS))
                 .signWith(key, SignatureAlgorithm.HS256)

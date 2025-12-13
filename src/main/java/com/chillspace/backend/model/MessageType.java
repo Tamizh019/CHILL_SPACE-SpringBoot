@@ -3,5 +3,6 @@ package com.chillspace.backend.model;
 public enum MessageType {
     CHAT,
     JOIN,
-    LEAVE
+    LEAVE,
+    DELETE
 }

@@ -34,12 +34,15 @@ public class AuthService {
                 new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword()));
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
-        String jwt = jwtUtils.generateToken(request.getUsername());
 
         User user = userRepository.findByUsername(request.getUsername())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        return new AuthResponse(jwt, user.getUsername(), user.getRole(), user.getId());
+        // ...
+        String role = user.getRole().name();
+        String token = jwtUtils.generateToken(user.getUsername(), role);
+
+        return new AuthResponse(token, user.getUsername(), role, user.getId());
     }
 
     public void register(RegisterRequest request) {
@@ -55,7 +58,7 @@ public class AuthService {
         user.setUsername(request.getUsername());
         user.setEmail(request.getEmail());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
-        user.setRole("user");
+        user.setRole(com.chillspace.backend.model.Role.USER);
 
         userRepository.save(user);
     }
