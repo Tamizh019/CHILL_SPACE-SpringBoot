@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Chill Space | Home</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+    <div class="main-container">
+        <div class="glass-hero" style="text-align: center; opacity: 1; transform: translateY(0);">
+            <div class="hero-content">
+                <h1 class="hero-title">Welcome Home! 🚀</h1>
+                <p class="hero-subtitle">You have successfully logged into the Spring Boot Backend.</p>
+                <div style="margin-top: 20px;">
+                    <p style="color: var(--success);">JWT Token is valid.</p>
+                </div>
+                <button onclick="logout()" class="cta-button" style="margin-top:20px; width: 200px;">Logout</button>
+            </div>
+        </div>
+    </div>
+    <script>
+        // Client-side protection
+        const token = localStorage.getItem('jwt_token');
+        if (!token) {
+            window.location.href = 'index.html';
+        }
+
+        function logout() {
+            localStorage.removeItem('jwt_token');
+            localStorage.removeItem('user_info');
+            window.location.href = 'index.html';
+        }
+    </script>
+</body>
+
+</html>

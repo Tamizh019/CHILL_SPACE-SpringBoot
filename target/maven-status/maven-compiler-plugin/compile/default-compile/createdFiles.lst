@@ -1,0 +1,12 @@
+com\chillspace\backend\security\JwtAuthenticationFilter.class
+com\chillspace\backend\controller\AuthController.class
+com\chillspace\backend\controller\dto\RegisterRequest.class
+com\chillspace\backend\model\User.class
+com\chillspace\backend\service\AuthService.class
+com\chillspace\backend\ChillSpaceApplication.class
+com\chillspace\backend\config\SecurityConfig.class
+com\chillspace\backend\controller\dto\AuthResponse.class
+com\chillspace\backend\security\JwtUtils.class
+com\chillspace\backend\service\CustomUserDetailsService.class
+com\chillspace\backend\controller\dto\LoginRequest.class
+com\chillspace\backend\repository\UserRepository.class
