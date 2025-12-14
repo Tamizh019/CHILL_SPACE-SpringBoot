@@ -1,0 +1,39 @@
+HELP.md
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+.classpath
+.project
+.settings/
+.factorypath
+
+### STS ###
+.apt_generated
+.apt_generated_tests
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+
+### NetBeans ###
+/nbproject/private/
+/nbproject/Makefile
+/nbproject/src/
+/nbproject/test/
+/build/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+### VS Code ###
+.vscode/
+
+### Secrets ###
+.env
+.env.*
+
+### Logs ###
+*.log
