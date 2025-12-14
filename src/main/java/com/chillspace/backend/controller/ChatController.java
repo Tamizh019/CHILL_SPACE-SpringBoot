@@ -51,8 +51,15 @@ public class ChatController {
         // Add username in web socket session
         headerAccessor.getSessionAttributes().put("username", chatMessage.getSender());
 
-        // Add to online list
+        // Add to online list (In-Memory)
         onlineUsers.add(chatMessage.getSender());
+        
+        // Sync with Database
+        userRepository.findByUsername(chatMessage.getSender()).ifPresent(user -> {
+            user.setOnline(true);
+            user.setLastSeen(java.time.LocalDateTime.now());
+            userRepository.save(user);
+        });
 
         return chatMessage;
     }
@@ -60,6 +67,13 @@ public class ChatController {
     // Helper to remove user (called by EventListener)
     public void removeUser(String username) {
         onlineUsers.remove(username);
+        
+        // Sync with Database
+        userRepository.findByUsername(username).ifPresent(user -> {
+            user.setOnline(false);
+            user.setLastSeen(java.time.LocalDateTime.now());
+            userRepository.save(user);
+        });
     }
 
     // API to get online users

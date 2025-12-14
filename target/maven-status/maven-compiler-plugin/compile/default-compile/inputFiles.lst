@@ -2,8 +2,10 @@ D:\TAMIZH\CHILL_SPACE-SpringBoot\src\main\java\com\chillspace\backend\service\Au
 D:\TAMIZH\CHILL_SPACE-SpringBoot\src\main\java\com\chillspace\backend\controller\dto\AuthResponse.java
 D:\TAMIZH\CHILL_SPACE-SpringBoot\src\main\java\com\chillspace\backend\controller\dto\RegisterRequest.java
 D:\TAMIZH\CHILL_SPACE-SpringBoot\src\main\java\com\chillspace\backend\listener\WebSocketEventListener.java
+D:\TAMIZH\CHILL_SPACE-SpringBoot\src\main\java\com\chillspace\backend\service\GeminiService.java
 D:\TAMIZH\CHILL_SPACE-SpringBoot\src\main\java\com\chillspace\backend\controller\AuthController.java
 D:\TAMIZH\CHILL_SPACE-SpringBoot\src\main\java\com\chillspace\backend\model\Role.java
+D:\TAMIZH\CHILL_SPACE-SpringBoot\src\main\java\com\chillspace\backend\service\KnowledgeService.java
 D:\TAMIZH\CHILL_SPACE-SpringBoot\src\main\java\com\chillspace\backend\repository\ProfileImageRepository.java
 D:\TAMIZH\CHILL_SPACE-SpringBoot\src\main\java\com\chillspace\backend\ChillSpaceApplication.java
 D:\TAMIZH\CHILL_SPACE-SpringBoot\src\main\java\com\chillspace\backend\security\JwtAuthenticationFilter.java
@@ -24,3 +26,5 @@ D:\TAMIZH\CHILL_SPACE-SpringBoot\src\main\java\com\chillspace\backend\controller
 D:\TAMIZH\CHILL_SPACE-SpringBoot\src\main\java\com\chillspace\backend\security\JwtUtils.java
 D:\TAMIZH\CHILL_SPACE-SpringBoot\src\main\java\com\chillspace\backend\controller\ChatController.java
 D:\TAMIZH\CHILL_SPACE-SpringBoot\src\main\java\com\chillspace\backend\controller\FileController.java
+D:\TAMIZH\CHILL_SPACE-SpringBoot\src\main\java\com\chillspace\backend\controller\AiController.java
+D:\TAMIZH\CHILL_SPACE-SpringBoot\src\main\java\com\chillspace\backend\controller\ConfigController.java

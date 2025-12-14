@@ -118,9 +118,17 @@ document.addEventListener('DOMContentLoaded', () => {
     if (registerForm) {
 
         // Initialize Supabase
-        const supabaseUrl = 'https://eramujvdqefzmhalokth.supabase.co';
-        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVyYW11anZkcWVmem1oYWxva3RoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU2OTI3OTUsImV4cCI6MjA4MTI2ODc5NX0.RO4tzvS8as-UMlw5Mnc65l2Ni0-SDMcmWSUMds_1mWI';
-        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+        // Initialize Supabase Dynamically
+        let supabase;
+
+        // Fetch config first
+        fetch('/api/config/supabase')
+            .then(res => res.json())
+            .then(config => {
+                supabase = window.supabase.createClient(config.url, config.key);
+                console.log('✅ Supabase initialized');
+            })
+            .catch(err => console.error('❌ Failed to load config:', err));
 
         let isOtpSent = false;
 
@@ -128,6 +136,11 @@ document.addEventListener('DOMContentLoaded', () => {
             e.preventDefault();
             const messageEl = document.getElementById('registerMessage');
             const submitBtn = registerForm.querySelector('button[type="submit"]');
+
+            if (!supabase) {
+                showMessage(messageEl, "System initializing... please wait", 'error');
+                return;
+            }
 
             // Inputs
             const username = document.getElementById('username').value.trim();

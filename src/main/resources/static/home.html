@@ -30,8 +30,8 @@
         <aside class="sidebar">
             <div class="sidebar-header">
                 <div class="brand">
-                    <div class="brand-icon">
-                        <i class="fas fa-bolt"></i>
+                    <div>
+                        <img src="Assets/logo4.svg" alt="Logo" width="55" height="52">
                     </div>
                     <div class="brand-text">
                         <h1>CHILL</h1>
@@ -49,7 +49,8 @@
                     <i class="fas fa-folder-open"></i>
                     <span>Files</span>
                 </button>
-                <a href="admin.html" class="nav-item admin-only" id="adminNavItem" style="display: none;">
+                <a href="admin.html" class="nav-item admin-only" id="adminNavItem"
+                    style="display: none; text-decoration:none;">
                     <i class="fas fa-shield-alt"></i>
                     <span>Admin Panel</span>
                 </a>
@@ -57,7 +58,13 @@
                     <i class="fas fa-cog"></i>
                     <span>Settings</span>
                 </button>
+                <button class="nav-item" id="aiToggleBtn" data-view="ai">
+                    <i class="fas fa-robot"></i>
+                    <span>AI Assistant</span>
+                </button>
             </nav>
+
+
 
             <div class="sidebar-footer">
                 <div class="user-profile" id="userProfileBtn">
@@ -185,6 +192,47 @@
             </div>
         </section>
 
+        <!-- AI Section (Full Screen Tab) -->
+        <section class="ai-section" id="aiSection" style="display: none;">
+            <header class="content-header">
+                <div class="header-left">
+                    <div class="channel-info">
+                        <h2><i class="fas fa-robot"></i> Chat with Sparky</h2>
+                        <p>Your friendly AI assistant</p>
+                    </div>
+                </div>
+            </header>
+
+            <div class="ai-content-wrapper">
+                <div class="ai-messages" id="aiMessages">
+                    <!-- Welcome message -->
+                    <div class="ai-message bot">
+                        <div class="ai-avatar"><i class="fas fa-robot"></i></div>
+                        <div class="ai-msg-content">
+                            <div class="ai-msg-header">
+                                <span class="ai-sender">Sparky <i class="fas fa-bolt"></i></span>
+                                <span class="ai-time" id="welcomeTime"></span>
+                            </div>
+                            <div class="ai-bubble">
+                                Hey there! How's it going? 😊
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="ai-input-wrapper">
+                    <div class="ai-input-area">
+                        <input type="text" id="aiInput" placeholder="Ask Anything..." maxlength="1000">
+                        <button id="aiSendBtn"><i class="fas fa-paper-plane"></i></button>
+                    </div>
+                    <div class="ai-input-footer">
+                        <span class="ai-char-count"><span id="aiCharCount">0</span>/1000</span>
+                        <span class="ai-powered">Powered by <strong>TAMIZH</strong></span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
         <!-- Members Sidebar -->
         <aside class="members-panel" id="membersPanel">
             <div class="members-header">
@@ -269,6 +317,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.6.1/sockjs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
     <script src="js/chat.js"></script>
+    <script src="js/ai.js"></script>
 </body>
 
 </html>

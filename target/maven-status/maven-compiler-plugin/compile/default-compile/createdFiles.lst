@@ -15,12 +15,16 @@ com\chillspace\backend\controller\UserController.class
 com\chillspace\backend\security\JwtAuthenticationFilter.class
 com\chillspace\backend\service\AuthService.class
 com\chillspace\backend\config\SecurityConfig.class
+com\chillspace\backend\controller\AiController.class
 com\chillspace\backend\service\CustomUserDetailsService.class
 com\chillspace\backend\repository\ProfileImageRepository.class
 com\chillspace\backend\controller\dto\RegisterRequest.class
 com\chillspace\backend\model\Message$MessageBuilder.class
 com\chillspace\backend\repository\MessageRepository.class
+com\chillspace\backend\service\GeminiService.class
 com\chillspace\backend\model\MessageType.class
+com\chillspace\backend\service\KnowledgeService.class
+com\chillspace\backend\controller\ConfigController.class
 com\chillspace\backend\controller\ChatController.class
 com\chillspace\backend\model\ProfileImage.class
 com\chillspace\backend\controller\FileController.class

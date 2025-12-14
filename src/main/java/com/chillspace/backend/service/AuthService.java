@@ -45,8 +45,11 @@ public class AuthService {
         return new AuthResponse(token, user.getUsername(), role, user.getId());
     }
 
-    private static final String SUPABASE_URL = "https://eramujvdqefzmhalokth.supabase.co/auth/v1/user";
-    private static final String SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVyYW11anZkcWVmem1oYWxva3RoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU2OTI3OTUsImV4cCI6MjA4MTI2ODc5NX0.RO4tzvS8as-UMlw5Mnc65l2Ni0-SDMcmWSUMds_1mWI";
+    @org.springframework.beans.factory.annotation.Value("${supabase.url}")
+    private String supabaseUrl;
+
+    @org.springframework.beans.factory.annotation.Value("${supabase.key}")
+    private String supabaseKey;
 
     private void validateSupabaseToken(String token, String email) {
         if (token == null || token.isEmpty()) {
@@ -54,10 +57,12 @@ public class AuthService {
         }
         try {
             java.net.http.HttpClient client = java.net.http.HttpClient.newHttpClient();
+            String validationUrl = supabaseUrl + "/auth/v1/user";
+            
             java.net.http.HttpRequest request = java.net.http.HttpRequest.newBuilder()
-                    .uri(java.net.URI.create(SUPABASE_URL))
+                    .uri(java.net.URI.create(validationUrl))
                     .header("Authorization", "Bearer " + token)
-                    .header("apikey", SUPABASE_KEY)
+                    .header("apikey", supabaseKey)
                     .GET()
                     .build();
 

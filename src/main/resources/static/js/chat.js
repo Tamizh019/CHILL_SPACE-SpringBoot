@@ -9,6 +9,7 @@ let userRole = null;
 let token = null;
 let onlineUsers = new Set();
 let allUsersCache = [];
+let lastDisplayedDate = null;
 
 // DOM Elements (Updated for new HTML structure)
 const chatInput = document.getElementById('chatInput');
@@ -23,7 +24,7 @@ const totalMembersDisplay = document.getElementById('totalMembers');
 const offlineCountDisplay = document.getElementById('offlineCount');
 const logoutBtn = document.getElementById('logoutBtn');
 const profileModal = document.getElementById('profileModal');
-const modalClose = document.getElementById('closeModalBtn'); // Fixed ID
+const modalClose = document.getElementById('closeModalBtn');
 const sidebarUsername = document.getElementById('sidebarUsername'); // New
 const sidebarAvatar = document.getElementById('sidebarAvatar'); // New
 
@@ -32,7 +33,7 @@ const sidebarAvatar = document.getElementById('sidebarAvatar'); // New
 // ═══════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', () => {
     initializeApp();
-    setupUIEnhancements(); // New function for UI features
+    setupUIEnhancements();
 });
 
 function initializeApp() {
@@ -90,12 +91,45 @@ function setupUIEnhancements() {
         document.getElementById('membersPanel')?.classList.toggle('open');
     });
 
-    // Nav item switching
+    // Nav item switching (View Logic)
     const navItems = document.querySelectorAll('.nav-item');
+    const views = {
+        'chat': document.querySelector('.main-content'),
+        'files': document.getElementById('filesSection'),
+        'ai': document.getElementById('aiSection'),
+        'settings': null // Not implemented yet
+    };
+
     navItems.forEach(item => {
-        item.addEventListener('click', function () {
+        item.addEventListener('click', function (e) {
+            const viewId = this.dataset.view;
+
+            // If no data-view attribute, let it navigate normally (e.g., Admin Panel link)
+            if (!viewId) {
+                return; // Don't prevent default - allow link to work
+            }
+
+            e.preventDefault();
+
+            // 1. Update Active State
             navItems.forEach(i => i.classList.remove('active'));
             this.classList.add('active');
+
+            // 2. Hide all views
+            Object.values(views).forEach(el => {
+                if (el) el.style.display = 'none';
+            });
+
+            // 3. Show selected view
+            if (views[viewId]) {
+                views[viewId].style.display = 'flex';
+
+                // Specific init logic
+                if (viewId === 'chat') {
+                    const chatMsgs = document.getElementById('chatMessages');
+                    if (chatMsgs) chatMsgs.scrollTop = chatMsgs.scrollHeight;
+                }
+            }
         });
     });
 }
@@ -119,14 +153,13 @@ function parseJwt(token) {
     }
 }
 
-// Helper function to get avatar URL (custom or DiceBear fallback)
 function getAvatarUrl(targetUsername) {
     const userInfo = allUsersCache.find(u => u.username === targetUsername);
     if (userInfo?.hasProfileImage) {
         return `/api/users/${targetUsername}/avatar?t=${Date.now()}`;
     }
-    const avatarStyle = userInfo?.avatarStyle || 'bottts';
-    return `https://api.dicebear.com/7.x/${avatarStyle}/svg?seed=${targetUsername}`;
+    // Default fallback to local asset
+    return 'Assets/pfp2.jpg';
 }
 
 function updateUserUI() {
@@ -251,6 +284,15 @@ function sendMessage(event) {
 }
 
 function displayChatMessage(message) {
+    const messageDate = message.timestamp ? new Date(message.timestamp) : new Date();
+    const dateKey = messageDate.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+
+    // Insert date divider if date changed
+    if (lastDisplayedDate !== dateKey) {
+        displayDateDivider(messageDate);
+        lastDisplayedDate = dateKey;
+    }
+
     const messageElement = document.createElement('div');
     messageElement.classList.add('message');
     messageElement.setAttribute('data-id', message.id || '');
@@ -299,8 +341,7 @@ function displayChatMessage(message) {
     // Timestamp
     const time = document.createElement('span');
     time.classList.add('message-time');
-    const date = message.timestamp ? new Date(message.timestamp) : new Date();
-    time.textContent = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    time.textContent = messageDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     header.appendChild(time);
 
     content.appendChild(header);
@@ -347,6 +388,18 @@ function displayChatMessage(message) {
 
     chatMessages.appendChild(messageElement);
     scrollToBottom();
+}
+
+function displayDateDivider(date) {
+    const divider = document.createElement('div');
+    divider.classList.add('date-divider');
+
+    const dateLabel = document.createElement('span');
+    dateLabel.classList.add('date-label');
+    dateLabel.textContent = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }).toUpperCase();
+
+    divider.appendChild(dateLabel);
+    chatMessages.appendChild(divider);
 }
 
 function displayEventMessage(text) {
