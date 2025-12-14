@@ -8,9 +8,9 @@ let userId = null;
 let userRole = null;
 let token = null;
 let onlineUsers = new Set();
-let allUsersCache = []; // Cache all users
+let allUsersCache = [];
 
-// DOM Elements
+// DOM Elements (Updated for new HTML structure)
 const chatInput = document.getElementById('chatInput');
 const chatMessages = document.getElementById('chatMessages');
 const sendBtn = document.getElementById('sendBtn');
@@ -23,20 +23,19 @@ const totalMembersDisplay = document.getElementById('totalMembers');
 const offlineCountDisplay = document.getElementById('offlineCount');
 const logoutBtn = document.getElementById('logoutBtn');
 const profileModal = document.getElementById('profileModal');
-const modalClose = document.querySelector('.modal-close');
-const dropdownUsername = document.getElementById('dropdownUsername');
-const dropdownRole = document.getElementById('dropdownRole');
-const headerAvatar = document.getElementById('headerAvatar');
+const modalClose = document.getElementById('closeModalBtn'); // Fixed ID
+const sidebarUsername = document.getElementById('sidebarUsername'); // New
+const sidebarAvatar = document.getElementById('sidebarAvatar'); // New
 
 // ═══════════════════════════════════════════════════
 // 🚀 INITIALIZATION
 // ═══════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', () => {
     initializeApp();
+    setupUIEnhancements(); // New function for UI features
 });
 
 function initializeApp() {
-    // Load user info from localStorage
     const userInfo = JSON.parse(localStorage.getItem('user_info'));
     token = localStorage.getItem('jwt_token');
 
@@ -46,28 +45,59 @@ function initializeApp() {
         return;
     }
 
-    // Set user data
     username = userInfo.username;
     userId = userInfo.id;
 
-    // Parse JWT to get role
     const decoded = parseJwt(token);
     userRole = decoded.role || 'USER';
 
     console.log('✅ User authenticated:', username, '| Role:', userRole);
 
-    // Update UI with user info
-    updateUserUI();
-
-    // Setup event listeners
     setupEventListeners();
-
-    // Connect to WebSocket
     connectWebSocket();
 
-    // Load initial data
-    loadChatHistory();
-    loadAllUsers();
+    // IMPORTANT: Load users FIRST so avatar cache is populated before chat history
+    loadAllUsers().then(() => {
+        loadChatHistory();
+    });
+}
+
+// ═══════════════════════════════════════════════════
+// 🎨 UI ENHANCEMENTS
+// ═══════════════════════════════════════════════════
+function setupUIEnhancements() {
+    // User Dropdown Toggle
+    document.getElementById('userProfileBtn')?.addEventListener('click', function (e) {
+        e.stopPropagation();
+        document.getElementById('userDropdown')?.classList.toggle('show');
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function (e) {
+        if (!e.target.closest('.sidebar-footer')) {
+            document.getElementById('userDropdown')?.classList.remove('show');
+        }
+    });
+
+    // Profile Button
+    document.getElementById('profileBtn')?.addEventListener('click', function (e) {
+        e.preventDefault();
+        openEditProfileModal();
+    });
+
+    // Toggle Members Panel on Mobile
+    document.getElementById('toggleMembersBtn')?.addEventListener('click', function () {
+        document.getElementById('membersPanel')?.classList.toggle('open');
+    });
+
+    // Nav item switching
+    const navItems = document.querySelectorAll('.nav-item');
+    navItems.forEach(item => {
+        item.addEventListener('click', function () {
+            navItems.forEach(i => i.classList.remove('active'));
+            this.classList.add('active');
+        });
+    });
 }
 
 // ═══════════════════════════════════════════════════
@@ -89,28 +119,37 @@ function parseJwt(token) {
     }
 }
 
+// Helper function to get avatar URL (custom or DiceBear fallback)
+function getAvatarUrl(targetUsername) {
+    const userInfo = allUsersCache.find(u => u.username === targetUsername);
+    if (userInfo?.hasProfileImage) {
+        return `/api/users/${targetUsername}/avatar?t=${Date.now()}`;
+    }
+    const avatarStyle = userInfo?.avatarStyle || 'bottts';
+    return `https://api.dicebear.com/7.x/${avatarStyle}/svg?seed=${targetUsername}`;
+}
+
 function updateUserUI() {
-    // Get avatar style from server cache for current user
-    const myInfo = allUsersCache.find(u => u.username === username);
-    const avatarStyle = myInfo?.avatarStyle || 'initials';
-
-    // Update header avatar
-    if (headerAvatar) {
-        headerAvatar.src = `https://api.dicebear.com/7.x/${avatarStyle}/svg?seed=${username}`;
+    // Update sidebar avatar and username
+    if (sidebarAvatar) {
+        sidebarAvatar.src = getAvatarUrl(username);
+    }
+    if (sidebarUsername) {
+        sidebarUsername.textContent = username;
     }
 
-    // Update dropdown
-    if (dropdownUsername) dropdownUsername.textContent = username;
-    if (dropdownRole) {
+    // Update user status
+    const userStatus = document.getElementById('userStatus');
+    if (userStatus) {
         const roleText = userRole === 'ADMIN' ? 'Administrator' :
-            userRole === 'MODERATOR' ? 'Moderator' : 'User';
-        dropdownRole.textContent = roleText;
+            userRole === 'MODERATOR' ? 'Moderator' : 'Member';
+        userStatus.textContent = roleText;
     }
 
-    // Update dropdown avatar
-    const dropdownAvatar = document.querySelector('.dropdown-header img');
-    if (dropdownAvatar) {
-        dropdownAvatar.src = `https://api.dicebear.com/7.x/${avatarStyle}/svg?seed=${username}`;
+    // Show admin panel link for admins
+    const adminNavItem = document.getElementById('adminNavItem');
+    if (adminNavItem && userRole === 'ADMIN') {
+        adminNavItem.style.display = 'flex';
     }
 }
 
@@ -122,8 +161,6 @@ function connectWebSocket() {
 
     const socket = new SockJS('/ws');
     stompClient = Stomp.over(socket);
-
-    // Disable debug logs for cleaner console
     stompClient.debug = null;
 
     stompClient.connect({}, onConnected, onError);
@@ -132,22 +169,18 @@ function connectWebSocket() {
 function onConnected() {
     console.log('✅ WebSocket connected');
 
-    // Subscribe to public chat topic
     stompClient.subscribe('/topic/public', onMessageReceived);
 
-    // Announce user joined
     stompClient.send('/app/chat.addUser', {}, JSON.stringify({
         sender: username,
         type: 'JOIN'
     }));
 
-    // Fetch initial online users
     fetchOnlineUsers();
 }
 
 function onError(error) {
     console.error('❌ WebSocket error:', error);
-
     showNotification('Connection lost. Reconnecting...', 'error');
 
     setTimeout(() => {
@@ -176,7 +209,7 @@ function onMessageReceived(payload) {
 }
 
 // ═══════════════════════════════════════════════════
-// 💬 MESSAGE HANDLING
+// 💬 MESSAGE HANDLING (UPDATED FOR NEW DESIGN)
 // ═══════════════════════════════════════════════════
 function sendMessage(event) {
     if (event) event.preventDefault();
@@ -199,7 +232,7 @@ function sendMessage(event) {
     try {
         stompClient.send('/app/chat.sendMessage', {}, JSON.stringify(chatMessage));
         chatInput.value = '';
-        charCount.textContent = '0';
+        if (charCount) charCount.textContent = '0';
     } catch (error) {
         console.error('Failed to send message:', error);
         showNotification('Failed to send message', 'error');
@@ -211,93 +244,95 @@ function displayChatMessage(message) {
     messageElement.classList.add('message');
     messageElement.setAttribute('data-id', message.id || '');
 
-    // Debug: Log comparison
-    console.log(`Comparing sender: "${message.sender}" vs username: "${username}" => ${message.sender === username}`);
-
     const isOwnMessage = message.sender === username;
-    messageElement.classList.add(isOwnMessage ? 'message-sent' : 'message-received');
+    if (isOwnMessage) messageElement.classList.add('message-sent');
 
-    // Message header
+    // Avatar
+    const avatar = document.createElement('img');
+    avatar.src = getAvatarUrl(message.sender);
+    avatar.classList.add('message-avatar');
+    avatar.alt = message.sender;
+    messageElement.appendChild(avatar);
+
+    // Content Container
+    const content = document.createElement('div');
+    content.classList.add('message-content');
+
+    // Header
     const header = document.createElement('div');
     header.classList.add('message-header');
 
-    if (isOwnMessage) {
-        header.style.flexDirection = 'row-reverse';
-        header.style.justifyContent = 'flex-start';
-    }
+    const author = document.createElement('span');
+    author.classList.add('message-author');
+    author.textContent = message.sender;
+    header.appendChild(author);
 
-    const avatar = document.createElement('img');
-    // Look up avatar style from server cache
-    const senderInfo = allUsersCache.find(u => u.username === message.sender);
-    const avatarStyle = senderInfo?.avatarStyle || 'initials';
-    avatar.src = `https://api.dicebear.com/7.x/${avatarStyle}/svg?seed=${message.sender}`;
-    avatar.alt = message.sender;
-    avatar.classList.add('message-avatar');
-    header.appendChild(avatar);
-
-    const senderName = document.createElement('span');
-    senderName.classList.add('message-sender');
-    senderName.textContent = message.sender;
-    header.appendChild(senderName);
-
-    // Role badge
+    // Role Badge
     const role = message.senderRole || 'USER';
+    const badge = document.createElement('span');
+    badge.classList.add('role-badge');
+
     if (role === 'ADMIN') {
-        const badge = document.createElement('span');
-        badge.classList.add('role-badge', 'badge-admin');
+        badge.classList.add('badge-admin');
         badge.textContent = 'ADMIN';
-        header.appendChild(badge);
     } else if (role === 'MODERATOR') {
-        const badge = document.createElement('span');
-        badge.classList.add('role-badge', 'badge-mod');
+        badge.classList.add('badge-mod');
         badge.textContent = 'MOD';
-        header.appendChild(badge);
+    } else {
+        badge.classList.add('badge-user');
+        badge.textContent = 'USER';
     }
+    header.appendChild(badge);
 
-    messageElement.appendChild(header);
+    // Timestamp
+    const time = document.createElement('span');
+    time.classList.add('message-time');
+    const date = message.timestamp ? new Date(message.timestamp) : new Date();
+    time.textContent = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    header.appendChild(time);
 
-    // Message bubble
-    const bubble = document.createElement('div');
-    bubble.classList.add('message-bubble');
-    bubble.textContent = message.content;
+    content.appendChild(header);
 
-    // Delete button (if user can delete)
+    // Message Text
+    const text = document.createElement('div');
+    text.classList.add('message-text');
+    text.textContent = message.content;
+
+    // Delete button (if authorized)
     if (canDeleteMessage(message)) {
         const deleteBtn = document.createElement('button');
         deleteBtn.innerHTML = '<i class="fas fa-trash"></i>';
-        deleteBtn.classList.add('delete-message-btn');
         deleteBtn.style.cssText = `
-            background: none;
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: rgba(239, 68, 68, 0.2);
             border: none;
-            color: rgba(255, 255, 255, 0.5);
+            color: #EF4444;
             cursor: pointer;
-            margin-left: 10px;
-            padding: 4px 8px;
+            padding: 6px 8px;
             border-radius: 6px;
+            font-size: 12px;
+            opacity: 0;
             transition: all 0.2s;
         `;
-        deleteBtn.onmouseover = () => deleteBtn.style.background = 'rgba(255, 82, 82, 0.2)';
-        deleteBtn.onmouseout = () => deleteBtn.style.background = 'none';
+        deleteBtn.onmouseover = () => deleteBtn.style.background = 'rgba(239, 68, 68, 0.3)';
+        deleteBtn.onmouseout = () => deleteBtn.style.background = 'rgba(239, 68, 68, 0.2)';
         deleteBtn.onclick = (e) => {
             e.stopPropagation();
             deleteMessage(message.id, messageElement);
         };
-        bubble.appendChild(deleteBtn);
+        text.style.position = 'relative';
+        text.appendChild(deleteBtn);
+
+        // Show delete button on hover
+        text.addEventListener('mouseenter', () => deleteBtn.style.opacity = '1');
+        text.addEventListener('mouseleave', () => deleteBtn.style.opacity = '0');
     }
 
-    messageElement.appendChild(bubble);
+    content.appendChild(text);
+    messageElement.appendChild(content);
 
-    // Timestamp
-    const timestamp = document.createElement('div');
-    timestamp.classList.add('message-timestamp');
-    const date = message.timestamp ? new Date(message.timestamp) : new Date();
-    timestamp.textContent = date.toLocaleTimeString([], {
-        hour: '2-digit',
-        minute: '2-digit'
-    });
-    messageElement.appendChild(timestamp);
-
-    // Append to chat
     chatMessages.appendChild(messageElement);
     scrollToBottom();
 }
@@ -312,18 +347,14 @@ function displayEventMessage(text) {
 
 function canDeleteMessage(message) {
     if (!userRole || !message.id) return false;
-
     if (userRole === 'ADMIN') return true;
-
     if (userRole === 'MODERATOR') {
         const msgRole = message.senderRole || 'USER';
         return msgRole !== 'ADMIN';
     }
-
     if (userRole === 'USER') {
         return message.sender === username;
     }
-
     return false;
 }
 
@@ -398,7 +429,7 @@ function fetchOnlineUsers() {
 }
 
 function loadAllUsers() {
-    fetch('/api/users', {
+    return fetch('/api/users', {
         headers: {
             'Authorization': 'Bearer ' + token
         }
@@ -412,29 +443,27 @@ function loadAllUsers() {
                 totalMembersDisplay.textContent = users.length;
             }
 
-            // Update UI with server avatar styles
             updateUserUI();
             refreshMembersLists();
+            return users; // Return for chaining
         })
         .catch(error => {
             console.error('Error loading users:', error);
+            return []; // Return empty array on error
         });
 }
 
 // ═══════════════════════════════════════════════════
-// 👥 MEMBERS UI UPDATE - FIXED
+// 👥 MEMBERS UI UPDATE
 // ═══════════════════════════════════════════════════
 function refreshMembersLists() {
-    // Update online count
     const onlineCount = onlineUsers.size;
     if (onlineCountDisplay) onlineCountDisplay.textContent = onlineCount;
     if (onlineCountSidebar) onlineCountSidebar.textContent = onlineCount;
 
-    // Clear both lists
     if (onlineMembersList) onlineMembersList.innerHTML = '';
     if (offlineMembersList) offlineMembersList.innerHTML = '';
 
-    // Populate online members
     onlineUsers.forEach(user => {
         if (onlineMembersList) {
             const memberItem = createMemberItem(user, true);
@@ -442,7 +471,6 @@ function refreshMembersLists() {
         }
     });
 
-    // Populate offline members
     if (allUsersCache.length > 0) {
         const offlineUsers = allUsersCache.filter(user => !onlineUsers.has(user.username));
 
@@ -463,13 +491,11 @@ function createMemberItem(memberUsername, isOnline) {
     const memberItem = document.createElement('div');
     memberItem.classList.add('member-item');
 
-    // Look up avatar style from server cache
-    const userInfo = allUsersCache.find(u => u.username === memberUsername);
-    const avatarStyle = userInfo?.avatarStyle || 'initials';
+    const avatarUrl = getAvatarUrl(memberUsername);
 
     memberItem.innerHTML = `
         <div class="member-avatar-wrapper">
-            <img src="https://api.dicebear.com/7.x/${avatarStyle}/svg?seed=${memberUsername}" 
+            <img src="${avatarUrl}" 
                  class="member-avatar" 
                  alt="${memberUsername}">
             <div class="status-dot ${isOnline ? 'online' : 'offline'}"></div>
@@ -480,17 +506,15 @@ function createMemberItem(memberUsername, isOnline) {
         </div>
     `;
 
-    // Click to show profile (view-only for members list)
     memberItem.addEventListener('click', () => showProfileModal(memberUsername, false));
 
     return memberItem;
 }
 
 // ═══════════════════════════════════════════════════
-// 🎭 PROFILE MODAL - FIXED
+// 🎭 PROFILE MODAL
 // ═══════════════════════════════════════════════════
 function openEditProfileModal() {
-    // Open profile modal in edit mode for current user
     showProfileModal(username, true);
 }
 
@@ -499,89 +523,159 @@ function showProfileModal(targetUsername, allowEdit = false) {
     const modalAvatar = document.getElementById('modalAvatar');
     const modalUsername = document.getElementById('modalUsername');
     const modalRole = document.getElementById('modalRole');
-    const profileBody = document.querySelector('.profile-body');
+    const modalBody = document.querySelector('.modal-body');
 
-    // Use saved avatar style for current user
     const isMe = targetUsername === username;
-    const avatarStyle = isMe ? (localStorage.getItem('avatar_style') || 'initials') : 'initials';
+    const userInfo = allUsersCache.find(u => u.username === targetUsername);
 
+    // Set avatar (custom or fallback)
     if (modalAvatar) {
-        modalAvatar.src = `https://api.dicebear.com/7.x/${avatarStyle}/svg?seed=${targetUsername}`;
+        modalAvatar.src = getAvatarUrl(targetUsername);
     }
 
-    // Reset username display to text (not input)
     if (modalUsername) {
         modalUsername.textContent = targetUsername;
     }
 
-    const actionBtn = profileBody.querySelector('.btn-primary');
+    // Fetch and display REAL stats from backend
+    fetchUserStats(targetUsername);
 
-    // Only show edit option if:
-    // 1. It's me AND
-    // 2. allowEdit is true (clicked from header dropdown)
-    if (isMe && allowEdit) {
-        actionBtn.innerHTML = '<i class="fas fa-edit"></i> Edit Profile';
-        actionBtn.onclick = () => enableEditMode(profileBody, targetUsername);
-    } else if (isMe && !allowEdit) {
-        // It's me but clicked from members list - show view only
-        actionBtn.innerHTML = '<i class="fas fa-user"></i> Your Profile';
-        actionBtn.onclick = () => closeProfileModal();
-    } else {
-        // It's someone else - show send message button
-        actionBtn.innerHTML = '<i class="fas fa-comment"></i> Send Message';
-        actionBtn.onclick = () => {
-            closeProfileModal();
-            alert('Private messaging coming soon!');
-        };
+    const actionBtn = modalBody?.querySelector('.primary-btn');
+
+    if (actionBtn) {
+        if (isMe && allowEdit) {
+            actionBtn.innerHTML = '<i class="fas fa-edit"></i><span>Edit Profile</span>';
+            actionBtn.onclick = () => enableEditMode(modalBody, targetUsername);
+        } else if (isMe && !allowEdit) {
+            actionBtn.innerHTML = '<i class="fas fa-user"></i><span>Your Profile</span>';
+            actionBtn.onclick = () => closeProfileModal();
+        } else {
+            actionBtn.innerHTML = '<i class="fas fa-comment"></i><span>Send Message</span>';
+            actionBtn.onclick = () => {
+                closeProfileModal();
+                showNotification('Private messaging coming soon!', 'info');
+            };
+        }
     }
 
     if (modalRole) {
-        modalRole.textContent = 'Member';
+        const role = userInfo?.role || 'USER';
+        modalRole.textContent = role === 'ADMIN' ? 'Administrator' :
+            role === 'MODERATOR' ? 'Moderator' : 'Member';
     }
 
-    modal.classList.add('active');
+    modal?.classList.add('active');
+}
+
+// Fetch real user stats and update the modal
+function fetchUserStats(targetUsername) {
+    fetch(`/api/users/${targetUsername}/stats`, {
+        headers: { 'Authorization': 'Bearer ' + token }
+    })
+        .then(res => res.json())
+        .then(stats => {
+            // Update message count
+            const msgCountEl = document.querySelector('.stat-card:first-child .stat-value');
+            if (msgCountEl) msgCountEl.textContent = stats.messageCount || 0;
+
+            // Update days active
+            const daysActiveEl = document.querySelector('.stat-card:last-child .stat-value');
+            if (daysActiveEl) daysActiveEl.textContent = stats.daysActive || 1;
+        })
+        .catch(err => console.error('Failed to fetch user stats:', err));
 }
 
 function enableEditMode(container, currentName) {
     const nameEl = document.getElementById('modalUsername');
-    nameEl.innerHTML = `<input type="text" id="editUsernameInput" value="${currentName}" class="edit-input" />`;
-
-    // Add image selector below avatar
-    const avatarContainer = container.querySelector('.profile-avatar');
-    if (avatarContainer && !document.getElementById('avatarSelector')) {
-        const selectorHtml = `
-            <div id="avatarSelector" style="margin-top: 10px; text-align: center;">
-                <label style="display: block; margin-bottom: 8px; color: var(--text-secondary); font-size: 0.85rem;">Choose Avatar Style:</label>
-                <select id="avatarStyleSelect" class="edit-input" style="font-size: 1rem; padding: 10px;">
-                    <option value="initials">Initials</option>
-                    <option value="bottts">Robots</option>
-                    <option value="avataaars">Avatars</option>
-                    <option value="fun-emoji">Emoji</option>
-                    <option value="pixel-art">Pixel Art</option>
-                    <option value="lorelei">Lorelei</option>
-                </select>
-            </div>
-        `;
-        avatarContainer.insertAdjacentHTML('afterend', selectorHtml);
-
-        // Preview avatar on change
-        document.getElementById('avatarStyleSelect').addEventListener('change', (e) => {
-            const style = e.target.value;
-            const previewName = document.getElementById('editUsernameInput')?.value || currentName;
-            document.getElementById('modalAvatar').src = `https://api.dicebear.com/7.x/${style}/svg?seed=${previewName}`;
-        });
+    if (nameEl) {
+        nameEl.innerHTML = `<input type="text" id="editUsernameInput" value="${currentName}" style="background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); border-radius: 8px; padding: 8px 12px; color: white; font-size: 18px; text-align: center; width: 100%;" />`;
     }
 
-    const actionBtn = container.querySelector('.btn-primary');
-    actionBtn.innerHTML = '<i class="fas fa-save"></i> Save Changes';
-    actionBtn.onclick = () => saveProfile();
+    // Add image upload section
+    const modalHeader = container.closest('.modal-container')?.querySelector('.modal-header');
+    if (modalHeader && !document.getElementById('imageUploadSection')) {
+        const uploadHtml = `
+            <div id="imageUploadSection" style="position: absolute; bottom: -30px; left: 50%; transform: translateX(-50%); text-align: center; z-index: 10;">
+                <label for="avatarUploadInput" style="display: inline-flex; align-items: center; gap: 6px; background: var(--primary); color: white; padding: 8px 16px; border-radius: 20px; font-size: 12px; font-weight: 600; cursor: pointer; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);">
+                    <i class="fas fa-camera"></i>
+                    <span>Change Photo</span>
+                </label>
+                <input type="file" id="avatarUploadInput" accept="image/*" style="display: none;" />
+            </div>
+        `;
+        modalHeader.style.position = 'relative';
+        modalHeader.insertAdjacentHTML('beforeend', uploadHtml);
+
+        document.getElementById('avatarUploadInput').addEventListener('change', handleAvatarUpload);
+    }
+
+    const actionBtn = container.querySelector('.primary-btn');
+    if (actionBtn) {
+        actionBtn.innerHTML = '<i class="fas fa-save"></i><span>Save Changes</span>';
+        actionBtn.onclick = () => saveProfile();
+    }
+}
+
+// Handle avatar image upload
+function handleAvatarUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+        showNotification('Please select an image file', 'error');
+        return;
+    }
+
+    // Validate file size (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+        showNotification('Image must be less than 5MB', 'error');
+        return;
+    }
+
+    // Show preview immediately
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        const modalAvatar = document.getElementById('modalAvatar');
+        if (modalAvatar) {
+            modalAvatar.src = e.target.result;
+        }
+    };
+    reader.readAsDataURL(file);
+
+    // Upload to server
+    const formData = new FormData();
+    formData.append('file', file);
+
+    fetch('/api/users/avatar', {
+        method: 'POST',
+        headers: {
+            'Authorization': 'Bearer ' + token
+        },
+        body: formData
+    })
+        .then(res => res.json())
+        .then(data => {
+            if (data.message) {
+                showNotification('Profile photo updated!', 'success');
+                // Refresh user cache to get hasProfileImage flag
+                loadAllUsers();
+            }
+        })
+        .catch(err => {
+            console.error('Upload error:', err);
+            showNotification('Failed to upload image', 'error');
+        });
 }
 
 function saveProfile() {
-    const newName = document.getElementById('editUsernameInput').value.trim();
-    const avatarStyle = document.getElementById('avatarStyleSelect')?.value || 'initials';
+    const newName = document.getElementById('editUsernameInput')?.value.trim();
+    const avatarStyle = document.getElementById('avatarStyleSelect')?.value || 'bottts';
 
-    if (!newName) return alert("Username cannot be empty");
+    if (!newName) {
+        showNotification("Username cannot be empty", 'error');
+        return;
+    }
 
     fetch('/api/users/profile', {
         method: 'PUT',
@@ -594,49 +688,36 @@ function saveProfile() {
         .then(res => res.json())
         .then(data => {
             if (data.usernameChanged) {
-                alert('Profile updated! Please login again.');
-                handleLogout();
+                showNotification('Profile updated! Please login again.', 'info');
+                setTimeout(() => handleLogout(), 2000);
             } else if (data.message) {
-                // Reload users to get updated avatarStyle from server
                 loadAllUsers();
-
-                // Update header avatars in UI
-                const style = data.avatarStyle || avatarStyle;
-                if (headerAvatar) {
-                    headerAvatar.src = `https://api.dicebear.com/7.x/${style}/svg?seed=${username}`;
-                }
-                const dropdownAvatar = document.querySelector('.dropdown-header img');
-                if (dropdownAvatar) {
-                    dropdownAvatar.src = `https://api.dicebear.com/7.x/${style}/svg?seed=${username}`;
-                }
-                showNotification('Avatar style updated!', 'success');
+                showNotification('Profile updated successfully!', 'success');
                 closeProfileModal();
             }
         })
         .catch(err => {
             console.error(err);
-            alert('Failed to update profile');
+            showNotification('Failed to update profile', 'error');
         });
 }
 
 function closeProfileModal() {
-    // Remove avatar selector on close
-    const selector = document.getElementById('avatarSelector');
-    if (selector) selector.remove();
+    // Clean up edit mode elements
+    const uploadSection = document.getElementById('imageUploadSection');
+    if (uploadSection) uploadSection.remove();
 
-    profileModal.classList.remove('active');
+    profileModal?.classList.remove('active');
 }
 
 // ═══════════════════════════════════════════════════
 // 🎯 EVENT LISTENERS
 // ═══════════════════════════════════════════════════
 function setupEventListeners() {
-    // Send message on button click
     if (sendBtn) {
         sendBtn.addEventListener('click', sendMessage);
     }
 
-    // Send message on Enter key
     if (chatInput) {
         chatInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
@@ -645,7 +726,6 @@ function setupEventListeners() {
             }
         });
 
-        // Character counter
         chatInput.addEventListener('input', () => {
             if (charCount) {
                 charCount.textContent = chatInput.value.length;
@@ -653,26 +733,17 @@ function setupEventListeners() {
         });
     }
 
-    // Logout
     if (logoutBtn) {
-        logoutBtn.addEventListener('click', handleLogout);
-    }
-
-    // Profile Dropdown Item - Opens edit mode
-    const profileMenuItem = document.getElementById('profileMenuItem');
-    if (profileMenuItem) {
-        profileMenuItem.addEventListener('click', (e) => {
+        logoutBtn.addEventListener('click', (e) => {
             e.preventDefault();
-            openEditProfileModal(); // Opens with edit capability
+            handleLogout();
         });
     }
 
-    // Close modal
     if (modalClose) {
         modalClose.addEventListener('click', closeProfileModal);
     }
 
-    // Close modal on backdrop click
     if (profileModal) {
         profileModal.addEventListener('click', (e) => {
             if (e.target === profileModal) {
@@ -681,23 +752,10 @@ function setupEventListeners() {
         });
     }
 
-    // Close modal on Escape key
     document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && profileModal.classList.contains('active')) {
+        if (e.key === 'Escape' && profileModal?.classList.contains('active')) {
             closeProfileModal();
         }
-    });
-
-    // Tab switching
-    const tabButtons = document.querySelectorAll('.tab-btn');
-    tabButtons.forEach(btn => {
-        btn.addEventListener('click', () => {
-            tabButtons.forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-
-            const tab = btn.getAttribute('data-tab');
-            console.log('Switched to tab:', tab);
-        });
     });
 }
 
@@ -705,7 +763,6 @@ function setupEventListeners() {
 // 🚪 LOGOUT
 // ═══════════════════════════════════════════════════
 function handleLogout() {
-    // Disconnect WebSocket
     if (stompClient && stompClient.connected) {
         stompClient.send('/app/chat.removeUser', {}, JSON.stringify({
             sender: username,
@@ -714,11 +771,8 @@ function handleLogout() {
         stompClient.disconnect();
     }
 
-    // Clear localStorage
     localStorage.removeItem('jwt_token');
     localStorage.removeItem('user_info');
-
-    // Redirect to login
     window.location.href = 'index.html';
 }
 
@@ -726,84 +780,47 @@ function handleLogout() {
 // 🔔 NOTIFICATIONS
 // ═══════════════════════════════════════════════════
 function showNotification(message, type = 'info') {
+    const colors = {
+        error: '#EF4444',
+        success: '#10B981',
+        info: '#6366F1'
+    };
+
     const notification = document.createElement('div');
-    notification.className = `notification notification-${type}`;
     notification.textContent = message;
     notification.style.cssText = `
         position: fixed;
-        top: 90px;
-        right: 20px;
-        background: ${type === 'error' ? '#FF5252' : type === 'success' ? '#00E676' : '#5B7FFF'};
+        top: 24px;
+        right: 24px;
+        background: ${colors[type] || colors.info};
         color: white;
         padding: 16px 24px;
         border-radius: 12px;
         box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-        z-index: 9999;
-        animation: slideInRight 0.3s ease;
+        z-index: 10000;
         font-weight: 500;
-        font-size: 0.9rem;
+        font-size: 14px;
+        animation: slideInRight 0.3s ease;
     `;
 
     document.body.appendChild(notification);
 
     setTimeout(() => {
         notification.style.animation = 'slideOutRight 0.3s ease';
-        setTimeout(() => {
-            notification.remove();
-        }, 300);
+        setTimeout(() => notification.remove(), 300);
     }, 3000);
-}
-
-// ═══════════════════════════════════════════════════
-// 🎨 UTILITY FUNCTIONS
-// ═══════════════════════════════════════════════════
-function formatTimestamp(date) {
-    return new Date(date).toLocaleTimeString([], {
-        hour: '2-digit',
-        minute: '2-digit'
-    });
-}
-
-function smoothScrollToBottom() {
-    chatMessages.scrollTo({
-        top: chatMessages.scrollHeight,
-        behavior: 'smooth'
-    });
-}
-
-function isAtBottom() {
-    const threshold = 100;
-    return chatMessages.scrollHeight - chatMessages.scrollTop - chatMessages.clientHeight < threshold;
 }
 
 // Add CSS animations
 const style = document.createElement('style');
 style.textContent = `
     @keyframes slideInRight {
-        from {
-            transform: translateX(400px);
-            opacity: 0;
-        }
-        to {
-            transform: translateX(0);
-            opacity: 1;
-        }
+        from { transform: translateX(400px); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
     }
-
     @keyframes slideOutRight {
-        from {
-            transform: translateX(0);
-            opacity: 1;
-        }
-        to {
-            transform: translateX(400px);
-            opacity: 0;
-        }
-    }
-
-    .delete-message-btn:hover {
-        background: rgba(255, 82, 82, 0.2) !important;
-        color: #FF5252 !important;
+        from { transform: translateX(0); opacity: 1; }
+        to { transform: translateX(400px); opacity: 0; }
     }
 `;
 document.head.appendChild(style);
@@ -816,3 +833,262 @@ setInterval(() => {
         fetchOnlineUsers();
     }
 }, 30000);
+
+// ═══════════════════════════════════════════════════
+// 📁 FILES SECTION
+// ═══════════════════════════════════════════════════
+const filesSection = document.getElementById('filesSection');
+const filesList = document.getElementById('filesList');
+const uploadArea = document.getElementById('uploadArea');
+const fileInput = document.getElementById('fileInput');
+const uploadBtn = document.getElementById('uploadBtn');
+const fileCountDisplay = document.getElementById('fileCount');
+const mainContent = document.querySelector('.main-content');
+
+let currentView = 'chat';
+
+// Navigation switching
+document.querySelectorAll('.nav-item').forEach(item => {
+    item.addEventListener('click', () => {
+        const view = item.dataset.view;
+        switchView(view);
+
+        // Update active state
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        item.classList.add('active');
+    });
+});
+
+function switchView(view) {
+    currentView = view;
+
+    if (view === 'chat') {
+        mainContent.style.display = 'flex';
+        filesSection.style.display = 'none';
+    } else if (view === 'files') {
+        mainContent.style.display = 'none';
+        filesSection.style.display = 'flex';
+        loadFiles();
+    } else if (view === 'settings') {
+        // Could add settings view later
+        showNotification('Settings coming soon!');
+    }
+}
+
+// File upload functionality
+if (uploadBtn) {
+    uploadBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        fileInput.click();
+    });
+}
+
+if (uploadArea) {
+    uploadArea.addEventListener('click', () => fileInput.click());
+
+    // Drag and drop
+    uploadArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        uploadArea.classList.add('drag-over');
+    });
+
+    uploadArea.addEventListener('dragleave', () => {
+        uploadArea.classList.remove('drag-over');
+    });
+
+    uploadArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        uploadArea.classList.remove('drag-over');
+
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            handleFileUpload(files);
+        }
+    });
+}
+
+if (fileInput) {
+    fileInput.addEventListener('change', () => {
+        if (fileInput.files.length > 0) {
+            handleFileUpload(fileInput.files);
+        }
+    });
+}
+
+async function handleFileUpload(files) {
+    for (const file of files) {
+        // Check file size (50MB limit)
+        if (file.size > 50 * 1024 * 1024) {
+            showNotification(`${file.name} is too large (max 50MB)`);
+            continue;
+        }
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            const response = await fetch('/api/files/upload', {
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Bearer ' + token
+                },
+                body: formData
+            });
+
+            if (response.ok) {
+                showNotification(`${file.name} uploaded successfully!`);
+                loadFiles();
+            } else {
+                const error = await response.json();
+                showNotification(error.message || 'Upload failed');
+            }
+        } catch (error) {
+            console.error('Upload error:', error);
+            showNotification('Failed to upload file');
+        }
+    }
+
+    fileInput.value = '';
+}
+
+async function loadFiles() {
+    try {
+        const response = await fetch('/api/files', {
+            headers: {
+                'Authorization': 'Bearer ' + token
+            }
+        });
+
+        if (response.ok) {
+            const files = await response.json();
+            renderFiles(files);
+            if (fileCountDisplay) {
+                fileCountDisplay.textContent = files.length;
+            }
+        }
+    } catch (error) {
+        console.error('Error loading files:', error);
+    }
+}
+
+function renderFiles(files) {
+    if (!filesList) return;
+
+    if (files.length === 0) {
+        filesList.innerHTML = `
+            <div class="files-empty">
+                <i class="fas fa-folder-open"></i>
+                <h4>No files yet</h4>
+                <p>Upload files to share with everyone!</p>
+            </div>
+        `;
+        return;
+    }
+
+    filesList.innerHTML = files.map(file => `
+        <div class="file-card" data-id="${file.id}">
+            <div class="file-icon ${getFileIconClass(file.contentType)}">
+                <i class="${getFileIcon(file.contentType)}"></i>
+            </div>
+            <div class="file-info">
+                <div class="file-name" title="${file.filename}">${file.filename}</div>
+                <div class="file-meta">
+                    <span>${formatFileSize(file.fileSize)}</span>
+                    <span>by ${file.uploadedBy}</span>
+                </div>
+            </div>
+            <div class="file-actions">
+                <button class="file-action-btn download" onclick="downloadFile(${file.id}, '${file.filename}')" title="Download">
+                    <i class="fas fa-download"></i>
+                </button>
+                ${file.uploadedBy === username ? `
+                    <button class="file-action-btn delete" onclick="deleteFile(${file.id})" title="Delete">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                ` : ''}
+            </div>
+        </div>
+    `).join('');
+}
+
+function getFileIcon(contentType) {
+    if (!contentType) return 'fas fa-file';
+    if (contentType.startsWith('image/')) return 'fas fa-image';
+    if (contentType.startsWith('video/')) return 'fas fa-video';
+    if (contentType.startsWith('audio/')) return 'fas fa-music';
+    if (contentType.includes('pdf')) return 'fas fa-file-pdf';
+    if (contentType.includes('word') || contentType.includes('document')) return 'fas fa-file-word';
+    if (contentType.includes('zip') || contentType.includes('rar') || contentType.includes('archive')) return 'fas fa-file-archive';
+    if (contentType.includes('excel') || contentType.includes('spreadsheet')) return 'fas fa-file-excel';
+    return 'fas fa-file';
+}
+
+function getFileIconClass(contentType) {
+    if (!contentType) return '';
+    if (contentType.startsWith('image/')) return 'image';
+    if (contentType.startsWith('video/')) return 'video';
+    if (contentType.startsWith('audio/')) return 'audio';
+    if (contentType.includes('pdf')) return 'pdf';
+    if (contentType.includes('word') || contentType.includes('document')) return 'doc';
+    if (contentType.includes('zip') || contentType.includes('archive')) return 'zip';
+    return '';
+}
+
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+async function downloadFile(id, filename) {
+    try {
+        const response = await fetch(`/api/files/${id}`, {
+            headers: {
+                'Authorization': 'Bearer ' + token
+            }
+        });
+
+        if (response.ok) {
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        } else {
+            showNotification('Failed to download file');
+        }
+    } catch (error) {
+        console.error('Download error:', error);
+        showNotification('Failed to download file');
+    }
+}
+
+async function deleteFile(id) {
+    if (!confirm('Are you sure you want to delete this file?')) return;
+
+    try {
+        const response = await fetch(`/api/files/${id}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': 'Bearer ' + token
+            }
+        });
+
+        if (response.ok) {
+            showNotification('File deleted successfully');
+            loadFiles();
+        } else {
+            const error = await response.json();
+            showNotification(error.message || 'Failed to delete file');
+        }
+    } catch (error) {
+        console.error('Delete error:', error);
+        showNotification('Failed to delete file');
+    }
+}

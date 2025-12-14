@@ -18,8 +18,18 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<AuthResponse> login(@RequestBody LoginRequest request) {
-        return ResponseEntity.ok(authService.login(request));
+    public ResponseEntity<?> login(@RequestBody LoginRequest request) {
+        try {
+            return ResponseEntity.ok(authService.login(request));
+        } catch (org.springframework.security.authentication.LockedException e) {
+            return ResponseEntity.status(403).body(java.util.Map.of("message", "Account is banned. Contact admin."));
+        } catch (org.springframework.security.authentication.DisabledException e) {
+            return ResponseEntity.status(403).body(java.util.Map.of("message", "Account is disabled."));
+        } catch (org.springframework.security.authentication.BadCredentialsException e) {
+            return ResponseEntity.status(401).body(java.util.Map.of("message", "Invalid username or password"));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(java.util.Map.of("message", "Login failed: " + e.getMessage()));
+        }
     }
 
     @PostMapping("/register")

@@ -36,11 +36,11 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**").permitAll() // Allow Auth APIs
-                        .requestMatchers("/", "/index.html", "/register.html", "/home.html", "/ws/**", "/css/**",
-                                "/js/**",
-                                "/images/**", "/Assets/**")
-                        .permitAll() // Allow Static Resources
+                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/users/*/avatar", "/api/users/*/stats").permitAll()
+                        .requestMatchers("/", "/index.html", "/register.html", "/home.html", "/admin.html", "/ws/**", "/css/**",
+                                "/js/**", "/images/**", "/Assets/**")
+                        .permitAll()
                         .anyRequest().authenticated());
         http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 

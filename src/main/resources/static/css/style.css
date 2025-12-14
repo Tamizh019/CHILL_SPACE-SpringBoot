@@ -11,11 +11,11 @@
     --success: #00ff88;
     --error: #ff3366;
 
-    --card-width: 440px;
-    --input-height: 56px;
-    --radius-lg: 24px;
-    --radius-md: 16px;
-    --radius-sm: 12px;
+    --card-width: 330px;
+    --input-height: 42px;
+    --radius-lg: 18px;
+    --radius-md: 12px;
+    --radius-sm: 9px;
 }
 
 * {
@@ -136,7 +136,7 @@ body {
 }
 
 .hero-content {
-    padding: 48px 40px;
+    padding: 36px 30px;
     position: relative;
     z-index: 2;
 }
@@ -144,14 +144,14 @@ body {
 /* --- Header --- */
 .login-header {
     text-align: center;
-    margin-bottom: 40px;
+    margin-bottom: 30px;
 }
 
 .brand-badge {
     position: relative;
-    width: 80px;
-    height: 80px;
-    margin: 0 auto 24px;
+    width: 60px;
+    height: 60px;
+    margin: 0 auto 18px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -189,7 +189,7 @@ body {
 }
 
 .hero-title {
-    font-size: 2rem;
+    font-size: 1.5rem;
     font-weight: 700;
     margin-bottom: 8px;
     background: linear-gradient(135deg, #fff 0%, #e0e0ff 100%);
@@ -201,13 +201,13 @@ body {
 
 .hero-subtitle {
     color: var(--text-muted);
-    font-size: 0.95rem;
+    font-size: 0.75rem;
     font-weight: 400;
 }
 
 /* --- Form Elements --- */
 .input-wrapper {
-    margin-bottom: 24px;
+    margin-bottom: 18px;
 }
 
 .label-row {
@@ -219,7 +219,7 @@ body {
 
 .input-label {
     color: var(--text-muted);
-    font-size: 0.85rem;
+    font-size: 0.7rem;
     font-weight: 500;
     text-transform: uppercase;
     letter-spacing: 0.05em;
@@ -249,16 +249,16 @@ body {
     background: rgba(0, 0, 0, 0.2);
     border: 1px solid var(--glass-border);
     border-radius: var(--radius-sm);
-    padding: 0 16px 0 48px;
+    padding: 0 12px 0 36px;
     color: var(--text-main);
-    font-size: 1rem;
+    font-size: 0.8rem;
     transition: all 0.3s ease;
     outline: none;
 }
 
 .input-icon {
     position: absolute;
-    left: 16px;
+    left: 12px;
     top: 50%;
     transform: translateY(-50%);
     color: var(--text-muted);
@@ -302,7 +302,7 @@ body {
     border: none;
     border-radius: var(--radius-sm);
     color: white;
-    font-size: 1rem;
+    font-size: 0.8rem;
     font-weight: 600;
     cursor: pointer;
     overflow: hidden;
@@ -373,7 +373,7 @@ body {
     border: 1px solid var(--glass-border);
     border-radius: var(--radius-sm);
     color: var(--text-main);
-    font-size: 0.95rem;
+    font-size: 0.75rem;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.3s ease;
