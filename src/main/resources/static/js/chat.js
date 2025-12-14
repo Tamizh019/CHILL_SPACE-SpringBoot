@@ -202,6 +202,17 @@ function onMessageReceived(payload) {
             displayEventMessage(`${message.sender} left the chat`);
         } else if (message.type === 'CHAT') {
             displayChatMessage(message);
+        } else if (message.type === 'USER_UPDATE') {
+            console.log('🔄 User update received:', message.sender);
+            loadAllUsers(); // Refresh user cache
+
+            // If it's about me, update my UI
+            if (message.sender === username) {
+                // If I was banned/demoted, maybe reload? For now just refresh data.
+                if (message.content.includes('banned')) {
+                    window.location.reload();
+                }
+            }
         }
     } catch (error) {
         console.error('Error processing message:', error);
@@ -267,8 +278,9 @@ function displayChatMessage(message) {
     author.textContent = message.sender;
     header.appendChild(author);
 
-    // Role Badge
-    const role = message.senderRole || 'USER';
+    // Role Badge - Prioritize current role from cache, then historical message role
+    const userInfo = allUsersCache.find(u => u.username === message.sender);
+    const role = userInfo?.role || message.senderRole || 'USER';
     const badge = document.createElement('span');
     badge.classList.add('role-badge');
 
@@ -438,6 +450,22 @@ function loadAllUsers() {
         .then(users => {
             console.log(`📋 Total users: ${users.length}`);
             allUsersCache = users;
+
+            // Sync my role if it changed
+            if (username) {
+                const me = users.find(u => u.username === username);
+                if (me && me.role !== userRole) {
+                    console.log(`🆙 Role updated: ${userRole} -> ${me.role}`);
+                    userRole = me.role;
+
+                    // Update local storage so it persists on reload (visuals only)
+                    const userInfo = JSON.parse(localStorage.getItem('user_info') || '{}');
+                    userInfo.role = userRole;
+                    localStorage.setItem('user_info', JSON.stringify(userInfo));
+
+                    showNotification(`Your role has been updated to ${userRole}!`, 'info');
+                }
+            }
 
             if (totalMembersDisplay) {
                 totalMembersDisplay.textContent = users.length;

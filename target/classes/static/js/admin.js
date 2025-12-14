@@ -2,9 +2,10 @@
 // 🛡️ ADMIN DASHBOARD - JavaScript
 // ═══════════════════════════════════════════════════
 
-const token = localStorage.getItem('token');
-const username = localStorage.getItem('username');
-const role = localStorage.getItem('role');
+const token = localStorage.getItem('jwt_token');
+const userInfo = JSON.parse(localStorage.getItem('user_info') || '{}');
+const username = userInfo.username;
+const role = userInfo.role;
 
 // Check admin access
 if (!token || role !== 'ADMIN') {

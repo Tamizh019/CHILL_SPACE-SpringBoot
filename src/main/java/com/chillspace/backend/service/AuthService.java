@@ -45,7 +45,41 @@ public class AuthService {
         return new AuthResponse(token, user.getUsername(), role, user.getId());
     }
 
+    private static final String SUPABASE_URL = "https://eramujvdqefzmhalokth.supabase.co/auth/v1/user";
+    private static final String SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVyYW11anZkcWVmem1oYWxva3RoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU2OTI3OTUsImV4cCI6MjA4MTI2ODc5NX0.RO4tzvS8as-UMlw5Mnc65l2Ni0-SDMcmWSUMds_1mWI";
+
+    private void validateSupabaseToken(String token, String email) {
+        if (token == null || token.isEmpty()) {
+            throw new RuntimeException("Email verification required");
+        }
+        try {
+            java.net.http.HttpClient client = java.net.http.HttpClient.newHttpClient();
+            java.net.http.HttpRequest request = java.net.http.HttpRequest.newBuilder()
+                    .uri(java.net.URI.create(SUPABASE_URL))
+                    .header("Authorization", "Bearer " + token)
+                    .header("apikey", SUPABASE_KEY)
+                    .GET()
+                    .build();
+
+            java.net.http.HttpResponse<String> response = client.send(request, java.net.http.HttpResponse.BodyHandlers.ofString());
+
+            if (response.statusCode() != 200) {
+                throw new RuntimeException("Invalid verification token");
+            }
+
+            // Simple check to ensure token belongs to the email
+            if (!response.body().contains(email)) {
+                throw new RuntimeException("Token email mismatch");
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Verification failed: " + e.getMessage());
+        }
+    }
+
     public void register(RegisterRequest request) {
+        // Verify OTP Token first
+        validateSupabaseToken(request.getSupabaseAccessToken(), request.getEmail());
+
         if (userRepository.existsByUsername(request.getUsername())) {
             throw new RuntimeException("Username is already taken!");
         }

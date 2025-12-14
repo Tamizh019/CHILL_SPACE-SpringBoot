@@ -113,61 +113,149 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // REGISTER FORM
+    // REGISTER FORM (Supabase OTP Flow)
     const registerForm = document.getElementById('registerForm');
     if (registerForm) {
+
+        // Initialize Supabase
+        const supabaseUrl = 'https://eramujvdqefzmhalokth.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVyYW11anZkcWVmem1oYWxva3RoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU2OTI3OTUsImV4cCI6MjA4MTI2ODc5NX0.RO4tzvS8as-UMlw5Mnc65l2Ni0-SDMcmWSUMds_1mWI';
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+        let isOtpSent = false;
+
         registerForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const messageEl = document.getElementById('registerMessage');
             const submitBtn = registerForm.querySelector('button[type="submit"]');
 
+            // Inputs
             const username = document.getElementById('username').value.trim();
             const email = document.getElementById('email').value.trim();
             const password = document.getElementById('password').value;
             const confirmPassword = document.getElementById('confirmPassword').value;
+            const otpInput = document.getElementById('otp').value.trim();
 
-            // Basic Validation
-            if (password !== confirmPassword) {
-                showMessage(messageEl, "Passwords do not match", 'error');
-                shakeCard();
-                return;
-            }
+            const otpGroup = document.getElementById('otpGroup');
+            const otherInputs = registerForm.querySelectorAll('.input-wrapper:not(#otpGroup)');
 
-            // UI Reset
+            // Reset UI
             messageEl.style.display = 'none';
             messageEl.className = 'status-message';
-            const originalText = submitBtn.textContent;
-            submitBtn.disabled = true;
-            submitBtn.textContent = 'Creating Account...';
+            shakeCard(); // Shake on error only
 
-            try {
-                const response = await fetch('/api/auth/register', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username, email, password })
-                });
-
-                const text = await response.text();
-                // Spring Boot might return string or JSON depending on impl.
-                // Our controller returns ResponseEntity.ok("User registered successfully!");
-
-                if (!response.ok) {
-                    throw new Error(text || 'Registration failed');
+            /* --- STEP 1: REQUEST OTP --- */
+            if (!isOtpSent) {
+                // Validation
+                if (password !== confirmPassword) {
+                    showMessage(messageEl, "Passwords do not match", 'error');
+                    shakeCard();
+                    return;
+                }
+                if (password.length < 6) {
+                    showMessage(messageEl, "Password must be at least 6 characters", 'error');
+                    shakeCard();
+                    return;
                 }
 
-                showMessage(messageEl, 'Account created! Redirecting...', 'success');
-                document.querySelector('.glass-hero').style.opacity = '0.5';
+                // UI Loading
+                const originalText = submitBtn.textContent;
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Sending Code...';
 
-                setTimeout(() => {
-                    window.location.href = 'index.html';
-                }, 2000);
+                try {
+                    // Send OTP via Supabase
+                    const { data, error } = await supabase.auth.signInWithOtp({
+                        email: email,
+                        options: {
+                            shouldCreateUser: true // Create user if not exists
+                        }
+                    });
 
-            } catch (error) {
-                console.error(error);
-                showMessage(messageEl, 'Registration failed: ' + error.message, 'error');
-                shakeCard();
-                submitBtn.disabled = false;
-                submitBtn.textContent = originalText;
+                    if (error) throw error;
+
+                    // Success UI Transition
+                    isOtpSent = true;
+                    // Hide other inputs to focus on OTP
+                    otherInputs.forEach(el => el.style.display = 'none');
+                    otpGroup.style.display = 'block';
+
+                    submitBtn.innerHTML = '<span class="btn-text">Verify & Register</span><div class="btn-shine"></div>';
+                    submitBtn.disabled = false;
+                    showMessage(messageEl, `Code sent to ${email}`, 'success');
+
+                } catch (error) {
+                    console.error('Supabase Error:', error);
+                    showMessage(messageEl, error.message, 'error');
+                    shakeCard();
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = originalText;
+                }
+
+                /* --- STEP 2: VERIFY OTP & REGISTER --- */
+            } else {
+                if (otpInput.length < 6) {
+                    showMessage(messageEl, "Enter valid 6-digit code", 'error');
+                    shakeCard();
+                    return;
+                }
+
+                // UI Loading
+                const originalText = submitBtn.textContent;
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Verifying...';
+
+                try {
+                    // Verify OTP
+                    const { data, error } = await supabase.auth.verifyOtp({
+                        email: email,
+                        token: otpInput,
+                        type: 'email'
+                    });
+
+                    if (error) throw error;
+
+                    const session = data.session;
+                    if (!session) throw new Error("Verification failed. Try again.");
+
+                    // Call Local Backend to Create User
+                    submitBtn.textContent = 'Finalizing...';
+
+                    const backendResponse = await fetch('/api/auth/register', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            username,
+                            email,
+                            password,
+                            supabaseAccessToken: session.access_token // Send token for server validation
+                        })
+                    });
+
+                    const text = await backendResponse.text();
+
+                    if (!backendResponse.ok) {
+                        throw new Error(text || 'Registration failed on server');
+                    }
+
+                    // Success!
+                    showMessage(messageEl, 'Account verified & created! Redirecting...', 'success');
+                    document.querySelector('.glass-hero').style.opacity = '0.5';
+
+                    // Cleanup Supabase session (optional, since we use our own JWT)
+                    await supabase.auth.signOut();
+
+                    setTimeout(() => {
+                        window.location.href = 'index.html';
+                    }, 2000);
+
+                } catch (error) {
+                    console.error('Verification Error:', error);
+                    showMessage(messageEl, error.message, 'error');
+                    shakeCard();
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = originalText;
+                }
             }
         });
     }

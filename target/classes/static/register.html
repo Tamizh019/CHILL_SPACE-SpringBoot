@@ -10,6 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
         rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="css/style.css">
 </head>
 
@@ -115,6 +116,27 @@
                                 placeholder="Repeat password" required autocomplete="new-password">
                             <div class="input-border"></div>
                         </div>
+                    </div>
+
+                    <!-- OTP Input (Hidden by default) -->
+                    <div class="input-wrapper" id="otpGroup" style="display: none;">
+                        <label for="otp" class="input-label">Verification Code</label>
+                        <div class="input-container">
+                            <i class="input-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round">
+                                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                                </svg>
+                            </i>
+                            <input type="text" id="otp" class="glass-input" placeholder="Enter 6-digit code"
+                                autocomplete="one-time-code" maxlength="6"
+                                style="letter-spacing: 4px; text-align: center;">
+                            <div class="input-border"></div>
+                        </div>
+                        <p style="font-size: 12px; color: rgba(255,255,255,0.6); margin-top: 5px; text-align: right;">
+                            Code sent to your email
+                        </p>
                     </div>
 
                     <button type="submit" class="cta-button">

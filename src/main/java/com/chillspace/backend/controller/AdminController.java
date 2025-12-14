@@ -25,6 +25,18 @@ public class AdminController {
     private final MessageRepository messageRepository;
     private final SharedFileRepository fileRepository;
 
+    private final org.springframework.messaging.simp.SimpMessagingTemplate messagingTemplate;
+
+    // Helper to broadcast updates
+    private void broadcastUserUpdate(User user) {
+        com.chillspace.backend.model.Message updateMsg = new com.chillspace.backend.model.Message();
+        updateMsg.setType(com.chillspace.backend.model.MessageType.USER_UPDATE);
+        updateMsg.setSender(user.getUsername());
+        updateMsg.setSenderRole(user.getRole());
+        updateMsg.setContent("User updated"); // Optional content
+        messagingTemplate.convertAndSend("/topic/public", updateMsg);
+    }
+
     /**
      * Get dashboard statistics
      */
@@ -147,6 +159,8 @@ public class AdminController {
         user.setOnline(false);
         userRepository.save(user);
 
+        broadcastUserUpdate(user);
+
         return ResponseEntity.ok(Map.of("message", "User banned successfully"));
     }
 
@@ -170,6 +184,8 @@ public class AdminController {
         user.setBannedAt(null);
         user.setBannedBy(null);
         userRepository.save(user);
+
+        broadcastUserUpdate(user);
 
         return ResponseEntity.ok(Map.of("message", "User unbanned successfully"));
     }
@@ -198,6 +214,8 @@ public class AdminController {
         user.setRole(Role.MODERATOR);
         userRepository.save(user);
 
+        broadcastUserUpdate(user);
+
         return ResponseEntity.ok(Map.of("message", "User promoted to moderator"));
     }
 
@@ -224,6 +242,8 @@ public class AdminController {
 
         user.setRole(Role.USER);
         userRepository.save(user);
+
+        broadcastUserUpdate(user);
 
         return ResponseEntity.ok(Map.of("message", "User demoted to regular user"));
     }

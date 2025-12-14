@@ -2,7 +2,7 @@
 // 🛡️ ADMIN DASHBOARD - JavaScript
 // ═══════════════════════════════════════════════════
 
-const token = localStorage.getItem('jwt_token'); // Corrected key name
+const token = localStorage.getItem('jwt_token');
 const userInfo = JSON.parse(localStorage.getItem('user_info') || '{}');
 const username = userInfo.username;
 const role = userInfo.role;
