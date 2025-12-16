@@ -34,6 +34,7 @@ const sidebarAvatar = document.getElementById('sidebarAvatar'); // New
 document.addEventListener('DOMContentLoaded', () => {
     initializeApp();
     setupUIEnhancements();
+    setupSettings(); // Initialize settings listeners
 });
 
 function initializeApp() {
@@ -97,7 +98,7 @@ function setupUIEnhancements() {
         'chat': document.querySelector('.main-content'),
         'files': document.getElementById('filesSection'),
         'ai': document.getElementById('aiSection'),
-        'settings': null // Not implemented yet
+        'settings': document.getElementById('settingsSection')
     };
 
     navItems.forEach(item => {
@@ -129,9 +130,171 @@ function setupUIEnhancements() {
                     const chatMsgs = document.getElementById('chatMessages');
                     if (chatMsgs) chatMsgs.scrollTop = chatMsgs.scrollHeight;
                 }
+
+                if (viewId === 'settings') {
+                    // Refresh settings UI when opened
+                    document.getElementById('settingsUsername').value = username;
+                }
             }
         });
     });
+}
+
+// ═══════════════════════════════════════════════════
+// ⚙️ SETTINGS LOGIC
+// ═══════════════════════════════════════════════════
+function setupSettings() {
+    // 1. Theme Configuration
+    const themeBtns = document.querySelectorAll('.theme-btn');
+
+    // Load saved theme
+    const savedTheme = localStorage.getItem('app_theme') || 'glass';
+    applyTheme(savedTheme);
+
+    themeBtns.forEach(btn => {
+        if (btn.dataset.theme === savedTheme) btn.classList.add('active');
+
+        btn.addEventListener('click', () => {
+            const theme = btn.dataset.theme;
+            applyTheme(theme);
+
+            // Update UI
+            themeBtns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            // Save preference
+            localStorage.setItem('app_theme', theme);
+            showNotification(`Theme changed to ${theme.charAt(0).toUpperCase() + theme.slice(1)}`, 'info');
+        });
+    });
+
+    // 2. Notifications
+    const soundToggle = document.getElementById('soundToggle');
+    const notifyToggle = document.getElementById('notifyToggle');
+
+    // Load preferences
+    const prefs = JSON.parse(localStorage.getItem('user_prefs') || '{"sound": true, "notify": false}');
+    if (soundToggle) soundToggle.checked = prefs.sound;
+    if (notifyToggle) notifyToggle.checked = prefs.notify;
+
+    soundToggle?.addEventListener('change', (e) => {
+        prefs.sound = e.target.checked;
+        savePrefs(prefs);
+    });
+
+    notifyToggle?.addEventListener('change', (e) => {
+        prefs.notify = e.target.checked;
+        savePrefs(prefs);
+        if (prefs.notify && Notification.permission !== 'granted') {
+            Notification.requestPermission();
+        }
+    });
+
+    // 3. Profile Settings
+    const saveUsernameBtn = document.getElementById('saveUsernameBtn');
+    if (saveUsernameBtn) {
+        saveUsernameBtn.addEventListener('click', () => {
+            const newName = document.getElementById('settingsUsername').value.trim();
+            if (newName && newName !== username) {
+                updateProfile(newName);
+            } else if (!newName) {
+                showNotification('Username cannot be empty', 'error');
+            }
+        });
+    }
+
+    const settingsAvatarInput = document.getElementById('settingsAvatarInput');
+    if (settingsAvatarInput) {
+        settingsAvatarInput.addEventListener('change', handleAvatarUpload);
+    }
+
+    // 4. Logout
+    const settingsLogoutBtn = document.getElementById('settingsLogoutBtn');
+    if (settingsLogoutBtn) {
+        settingsLogoutBtn.addEventListener('click', handleLogout);
+    }
+}
+
+function savePrefs(prefs) {
+    localStorage.setItem('user_prefs', JSON.stringify(prefs));
+}
+
+function applyTheme(theme) {
+    const root = document.documentElement;
+    // Default (Glass)
+    let colors = {
+        primary: '#7000ff',
+        secondary: '#00f0ff',
+        bgPrimary: '#08080c'
+    };
+
+    if (theme === 'midnight') {
+        colors = {
+            primary: '#3b82f6',
+            secondary: '#A855F7',
+            bgPrimary: '#000000'
+        };
+    } else if (theme === 'sunset') {
+        colors = {
+            primary: '#F43F5E',
+            secondary: '#F59E0B',
+            bgPrimary: '#2c0b1e'
+        };
+    } else if (theme === 'neon') {
+        colors = {
+            primary: '#00ff00',
+            secondary: '#00ffff',
+            bgPrimary: '#000000'
+        };
+    } else if (theme === 'forest') {
+        colors = {
+            primary: '#10B981',
+            secondary: '#34D399',
+            bgPrimary: '#022c22'
+        };
+    } else if (theme === 'royal') {
+        colors = {
+            primary: '#C084FC',
+            secondary: '#FFD700',
+            bgPrimary: '#171725'
+        };
+    }
+
+    root.style.setProperty('--primary', colors.primary);
+    root.style.setProperty('--secondary', colors.secondary);
+    root.style.setProperty('--bg-primary', colors.bgPrimary);
+}
+
+// Re-using existing profile update logic but adapted
+function updateProfile(newName) {
+    fetch('/api/users/profile', {
+        method: 'PUT',
+        headers: {
+            'Authorization': 'Bearer ' + token,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ username: newName }) // Only sending username
+    })
+        .then(res => res.json())
+        .then(data => {
+            if (data.usernameChanged) {
+                showNotification('Username updated! logging out...', 'success');
+                setTimeout(() => handleLogout(), 1500);
+            } else {
+                // Should not happen if we only change username to a unique one
+                showNotification('Failed to update username', 'error');
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            showNotification('Update failed. Username might be taken.', 'error');
+        });
+}
+
+function handleLogout() {
+    localStorage.removeItem('jwt_token');
+    localStorage.removeItem('user_info');
+    window.location.href = 'index.html';
 }
 
 // ═══════════════════════════════════════════════════
