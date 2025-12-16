@@ -1,0 +1,1867 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chill Space - Spring Boot Backend Documentation</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-color: #6366f1;
+            --secondary-color: #8b5cf6;
+            --accent-color: #ec4899;
+            --dark-bg: #0f172a;
+            --card-bg: #1e293b;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --border-color: #334155;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--dark-bg) 0%, #1a1f35 100%);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* Animated Background */
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background:
+                radial-gradient(circle at 20% 50%, rgba(99, 102, 241, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(236, 72, 153, 0.1) 0%, transparent 50%);
+            z-index: -1;
+            animation: bgPulse 15s ease-in-out infinite;
+        }
+
+        @keyframes bgPulse {
+
+            0%,
+            100% {
+                opacity: 0.5;
+            }
+
+            50% {
+                opacity: 1;
+            }
+        }
+
+        /* Header */
+        header {
+            background: rgba(30, 41, 59, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 0.75rem 0;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            border-bottom: 2px solid var(--primary-color);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.25rem;
+            animation: fadeInDown 1s ease-out;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .project-meta {
+            display: flex;
+            gap: 1.5rem;
+            margin-top: 0.5rem;
+            flex-wrap: wrap;
+            font-size: 0.85rem;
+        }
+
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-secondary);
+        }
+
+        .meta-item i {
+            color: var(--primary-color);
+        }
+
+        /* Navigation */
+        nav {
+            background: rgba(30, 41, 59, 0.9);
+            backdrop-filter: blur(10px);
+            padding: 0.5rem 0;
+            position: sticky;
+            top: 70px;
+            z-index: 999;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .nav-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: flex;
+            gap: 1rem;
+            overflow-x: auto;
+            scrollbar-width: thin;
+        }
+
+        .nav-container::-webkit-scrollbar {
+            height: 4px;
+        }
+
+        .nav-container::-webkit-scrollbar-thumb {
+            background: var(--primary-color);
+            border-radius: 4px;
+        }
+
+        .nav-btn {
+            padding: 0.75rem 1.5rem;
+            background: transparent;
+            color: var(--text-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+            font-size: 0.95rem;
+        }
+
+        .nav-btn:hover {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+            transform: translateY(-2px);
+        }
+
+        .nav-btn.active {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        /* Main Container */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 3rem 2rem;
+        }
+
+        /* Section Styling */
+        .section {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 2.5rem;
+            margin-bottom: 2rem;
+            border: 1px solid var(--border-color);
+            animation: fadeInUp 0.6s ease-out;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .section-title {
+            font-size: 2rem;
+            margin-bottom: 1.5rem;
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .section-title i {
+            font-size: 1.8rem;
+        }
+
+        .section-subtitle {
+            font-size: 1.5rem;
+            color: var(--secondary-color);
+            margin: 2rem 0 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        /* Cards */
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin: 1.5rem 0;
+        }
+
+        .card {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1));
+            padding: 1.5rem;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 24px rgba(99, 102, 241, 0.3);
+            border-color: var(--primary-color);
+        }
+
+        .card-title {
+            font-size: 1.2rem;
+            color: var(--primary-color);
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .card-content {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        /* Tables */
+        .table-container {
+            overflow-x: auto;
+            margin: 1.5rem 0;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-secondary);
+        }
+
+        tr:hover {
+            background: rgba(99, 102, 241, 0.1);
+        }
+
+        .code-badge {
+            background: var(--dark-bg);
+            color: var(--primary-color);
+            padding: 0.25rem 0.75rem;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            border: 1px solid var(--primary-color);
+        }
+
+        /* Code Blocks */
+        .code-block {
+            background: var(--dark-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+            overflow-x: auto;
+            position: relative;
+        }
+
+        .code-block::before {
+            content: attr(data-lang);
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background: var(--primary-color);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        .code-block code {
+            font-family: 'Courier New', monospace;
+            color: #7dd3fc;
+            font-size: 0.85rem;
+            line-height: 1.5;
+            white-space: pre;
+            display: block;
+        }
+
+        .code-block .keyword {
+            color: #c084fc;
+        }
+
+        .code-block .string {
+            color: #86efac;
+        }
+
+        .code-block .comment {
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        /* Architecture Diagram */
+        .architecture-diagram {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+            margin: 2rem 0;
+            padding: 2rem;
+            background: rgba(15, 23, 42, 0.5);
+            border-radius: 12px;
+        }
+
+        .layer {
+            text-align: center;
+            padding: 1.5rem;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(139, 92, 246, 0.2));
+            border-radius: 12px;
+            border: 2px solid var(--primary-color);
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .layer:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 30px rgba(99, 102, 241, 0.5);
+        }
+
+        .layer-title {
+            font-size: 1.2rem;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+            font-weight: bold;
+        }
+
+        .layer-items {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .layer-item {
+            background: var(--card-bg);
+            padding: 0.75rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            border: 1px solid var(--border-color);
+        }
+
+        /* Charts */
+        .chart-container {
+            position: relative;
+            height: 400px;
+            margin: 2rem 0;
+            padding: 2rem;
+            background: rgba(15, 23, 42, 0.5);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+        }
+
+        /* Feature List */
+        .feature-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .feature-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            padding: 1rem;
+            background: rgba(99, 102, 241, 0.1);
+            border-radius: 8px;
+            border-left: 3px solid var(--primary-color);
+        }
+
+        .feature-item i {
+            color: var(--success);
+            font-size: 1.5rem;
+            margin-top: 0.25rem;
+        }
+
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            padding: 2rem;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 8px 20px rgba(99, 102, 241, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 30px rgba(99, 102, 241, 0.5);
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: white;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 1rem;
+        }
+
+        /* Flow Diagram */
+        .flow-diagram {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin: 2rem 0;
+            padding: 2rem;
+            background: rgba(15, 23, 42, 0.5);
+            border-radius: 12px;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .flow-box {
+            flex: 1;
+            min-width: 150px;
+            padding: 1.5rem;
+            background: var(--card-bg);
+            border: 2px solid var(--primary-color);
+            border-radius: 12px;
+            text-align: center;
+            position: relative;
+        }
+
+        .flow-arrow {
+            color: var(--accent-color);
+            font-size: 2rem;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .tab {
+            padding: 0.75rem 1.5rem;
+            background: transparent;
+            color: var(--text-secondary);
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-bottom: 3px solid transparent;
+        }
+
+        .tab:hover {
+            color: var(--primary-color);
+        }
+
+        .tab.active {
+            color: var(--primary-color);
+            border-bottom-color: var(--primary-color);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        /* Badges */
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin: 0.25rem;
+        }
+
+        .badge-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .badge-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .badge-warning {
+            background: var(--warning);
+            color: white;
+        }
+
+        .badge-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2rem;
+            }
+
+            .architecture-diagram {
+                grid-template-columns: 1fr;
+            }
+
+            .section {
+                padding: 1.5rem;
+            }
+
+            .nav-container {
+                padding: 0 1rem;
+            }
+
+            .container {
+                padding: 2rem 1rem;
+            }
+
+            .chart-container {
+                height: 300px;
+                padding: 1rem;
+            }
+        }
+
+        /* Scroll to Top Button */
+        #scrollTopBtn {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            width: 50px;
+            height: 50px;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.5);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        #scrollTopBtn:hover {
+            background: var(--secondary-color);
+            transform: translateY(-5px);
+        }
+
+        /* Footer */
+        footer {
+            background: var(--card-bg);
+            padding: 2rem;
+            text-align: center;
+            border-top: 2px solid var(--primary-color);
+            margin-top: 3rem;
+        }
+
+        footer p {
+            color: var(--text-secondary);
+        }
+
+        footer .heart {
+            color: var(--accent-color);
+            animation: heartbeat 1.5s ease-in-out infinite;
+        }
+
+        @keyframes heartbeat {
+
+            0%,
+            100% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.2);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div class="header-content">
+            <h1><i class="fas fa-rocket"></i> Chill Space Backend Documentation</h1>
+            <p class="subtitle">Spring Boot Real-Time Chat Application with AI Integration</p>
+            <div class="project-meta">
+                <div class="meta-item">
+                    <i class="fas fa-code"></i>
+                    <span>Version 1.0</span>
+                </div>
+                <div class="meta-item">
+                    <i class="fas fa-user"></i>
+                    <span>Author: Tamizharasan</span>
+                </div>
+                <div class="meta-item">
+                    <i class="fas fa-calendar"></i>
+                    <span>Last Updated: December 16, 2025</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <nav>
+        <div class="nav-container">
+            <button class="nav-btn active" onclick="scrollToSection('overview')">
+                <i class="fas fa-info-circle"></i> Overview
+            </button>
+            <button class="nav-btn" onclick="scrollToSection('architecture')">
+                <i class="fas fa-sitemap"></i> Architecture
+            </button>
+            <button class="nav-btn" onclick="scrollToSection('package')">
+                <i class="fas fa-folder"></i> Package Structure
+            </button>
+            <button class="nav-btn" onclick="scrollToSection('models')">
+                <i class="fas fa-database"></i> Models
+            </button>
+            <button class="nav-btn" onclick="scrollToSection('services')">
+                <i class="fas fa-cogs"></i> Services
+            </button>
+            <button class="nav-btn" onclick="scrollToSection('controllers')">
+                <i class="fas fa-server"></i> Controllers
+            </button>
+            <button class="nav-btn" onclick="scrollToSection('websocket')">
+                <i class="fas fa-broadcast-tower"></i> WebSocket
+            </button>
+            <button class="nav-btn" onclick="scrollToSection('ai')">
+                <i class="fas fa-brain"></i> AI Integration
+            </button>
+            <button class="nav-btn" onclick="scrollToSection('deployment')">
+                <i class="fas fa-cloud"></i> Deployment
+            </button>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- Overview Section -->
+        <section id="overview" class="section">
+            <h2 class="section-title">
+                <i class="fas fa-info-circle"></i>
+                Project Overview
+            </h2>
+            <p style="color: var(--text-secondary); margin-bottom: 2rem;">
+                Chill Space is a full-stack, real-time chat application designed as a placement project. It showcases
+                modern web development practices with enterprise-grade features.
+            </p>
+
+            <div class="feature-list">
+                <div class="feature-item">
+                    <i class="fas fa-check-circle"></i>
+                    <div>
+                        <strong>JWT Authentication</strong>
+                        <p style="color: var(--text-secondary); font-size: 0.9rem;">Role-based access control (Admin,
+                            Moderator, User)</p>
+                    </div>
+                </div>
+                <div class="feature-item">
+                    <i class="fas fa-check-circle"></i>
+                    <div>
+                        <strong>Real-Time Messaging</strong>
+                        <p style="color: var(--text-secondary); font-size: 0.9rem;">WebSocket with STOMP protocol</p>
+                    </div>
+                </div>
+                <div class="feature-item">
+                    <i class="fas fa-check-circle"></i>
+                    <div>
+                        <strong>File Sharing</strong>
+                        <p style="color: var(--text-secondary); font-size: 0.9rem;">In-database BLOB storage</p>
+                    </div>
+                </div>
+                <div class="feature-item">
+                    <i class="fas fa-check-circle"></i>
+                    <div>
+                        <strong>AI Assistant</strong>
+                        <p style="color: var(--text-secondary); font-size: 0.9rem;">Powered by Google Gemini with
+                            Function Calling</p>
+                    </div>
+                </div>
+                <div class="feature-item">
+                    <i class="fas fa-check-circle"></i>
+                    <div>
+                        <strong>Admin Dashboard</strong>
+                        <p style="color: var(--text-secondary); font-size: 0.9rem;">User management, banning, and
+                            analytics</p>
+                    </div>
+                </div>
+                <div class="feature-item">
+                    <i class="fas fa-check-circle"></i>
+                    <div>
+                        <strong>Cloud-Ready</strong>
+                        <p style="color: var(--text-secondary); font-size: 0.9rem;">Docker support and environment-based
+                            configuration</p>
+                    </div>
+                </div>
+            </div>
+
+            <h3 class="section-subtitle">Technology Stack</h3>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value"><i class="fab fa-java"></i></div>
+                    <div class="stat-label">Java 17</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value"><i class="fas fa-leaf"></i></div>
+                    <div class="stat-label">Spring Boot 3.2.3</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value"><i class="fas fa-database"></i></div>
+                    <div class="stat-label">MySQL 8.0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value"><i class="fas fa-brain"></i></div>
+                    <div class="stat-label">Google Gemini</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value"><i class="fas fa-docker"></i></div>
+                    <div class="stat-label">Docker</div>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <canvas id="techStackChart"></canvas>
+            </div>
+        </section>
+
+        <!-- Architecture Section -->
+        <section id="architecture" class="section">
+            <h2 class="section-title">
+                <i class="fas fa-sitemap"></i>
+                Architecture & Tech Stack
+            </h2>
+
+            <div class="architecture-diagram">
+                <div class="layer">
+                    <div class="layer-title">Frontend</div>
+                    <div class="layer-items">
+                        <div class="layer-item">HTML/CSS/JS</div>
+                        <div class="layer-item">Responsive Design</div>
+                        <div class="layer-item">WebSocket Client</div>
+                    </div>
+                </div>
+                <div class="layer">
+                    <div class="layer-title">Backend</div>
+                    <div class="layer-items">
+                        <div class="layer-item">Spring Boot 3.2.3</div>
+                        <div class="layer-item">Spring Security + JWT</div>
+                        <div class="layer-item">WebSocket STOMP</div>
+                        <div class="layer-item">JPA/Hibernate</div>
+                        <div class="layer-item">Gemini AI Service</div>
+                    </div>
+                </div>
+                <div class="layer">
+                    <div class="layer-title">Database</div>
+                    <div class="layer-items">
+                        <div class="layer-item">MySQL 8.0</div>
+                        <div class="layer-item">Aiven Cloud</div>
+                        <div class="layer-item">BLOB Storage</div>
+                    </div>
+                </div>
+            </div>
+
+            <h3 class="section-subtitle">System Architecture</h3>
+            <div class="chart-container">
+                <canvas id="architectureChart"></canvas>
+            </div>
+        </section>
+
+        <!-- Package Structure Section -->
+        <section id="package" class="section">
+            <h2 class="section-title">
+                <i class="fas fa-folder"></i>
+                Package Structure
+            </h2>
+
+            <div class="code-block" data-lang="Tree">
+                <code>com.chillspace.backend/
+├── <span class="keyword">ChillSpaceApplication.java</span>    <span class="comment"># Main entry point</span>
+├── config/
+│   ├── SecurityConfig.java       <span class="comment"># Spring Security configuration</span>
+│   └── WebSocketConfig.java      <span class="comment"># WebSocket/STOMP configuration</span>
+├── controller/
+│   ├── AuthController.java       <span class="comment"># Login & Register endpoints</span>
+│   ├── ChatController.java       <span class="comment"># WebSocket message handlers + REST</span>
+│   ├── AiController.java         <span class="comment"># Sparky AI chat endpoint</span>
+│   ├── AdminController.java      <span class="comment"># Admin dashboard APIs</span>
+│   ├── FileController.java       <span class="comment"># File upload/download APIs</span>
+│   └── UserController.java       <span class="comment"># User profile & avatar APIs</span>
+├── model/
+│   ├── User.java                 <span class="comment"># User entity</span>
+│   ├── Message.java              <span class="comment"># Chat message entity</span>
+│   ├── SharedFile.java           <span class="comment"># File upload entity</span>
+│   └── ProfileImage.java         <span class="comment"># Avatar storage entity</span>
+├── repository/
+│   ├── UserRepository.java
+│   ├── MessageRepository.java
+│   ├── SharedFileRepository.java
+│   └── ProfileImageRepository.java
+├── service/
+│   ├── AuthService.java          <span class="comment"># Login/Register logic</span>
+│   ├── GeminiService.java        <span class="comment"># Gemini API integration</span>
+│   └── KnowledgeService.java     <span class="comment"># PDF RAG for AI</span>
+└── security/
+    ├── JwtUtils.java             <span class="comment"># Token generation & validation</span>
+    └── JwtAuthenticationFilter.java  <span class="comment"># Request filter</span>
+</code>
+            </div>
+
+            <div class="chart-container">
+                <canvas id="packageDistributionChart"></canvas>
+            </div>
+        </section>
+
+        <!-- Models Section -->
+        <section id="models" class="section">
+            <h2 class="section-title">
+                <i class="fas fa-database"></i>
+                Model Layer (Entities)
+            </h2>
+
+            <div class="tabs">
+                <button class="tab active" onclick="openTab(event, 'user-entity')">User Entity</button>
+                <button class="tab" onclick="openTab(event, 'message-entity')">Message Entity</button>
+                <button class="tab" onclick="openTab(event, 'file-entity')">SharedFile Entity</button>
+            </div>
+
+            <div id="user-entity" class="tab-content active">
+                <h3 class="section-subtitle">User Entity</h3>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Field</th>
+                                <th>Type</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="code-badge">id</span></td>
+                                <td>Long</td>
+                                <td>Primary key (auto-generated)</td>
+                            </tr>
+                            <tr>
+                                <td><span class="code-badge">username</span></td>
+                                <td>String</td>
+                                <td>Unique username</td>
+                            </tr>
+                            <tr>
+                                <td><span class="code-badge">email</span></td>
+                                <td>String</td>
+                                <td>Unique email</td>
+                            </tr>
+                            <tr>
+                                <td><span class="code-badge">password</span></td>
+                                <td>String</td>
+                                <td>BCrypt-hashed password</td>
+                            </tr>
+                            <tr>
+                                <td><span class="code-badge">role</span></td>
+                                <td>Role</td>
+                                <td>Enum: <span class="badge badge-primary">ADMIN</span> <span
+                                        class="badge badge-warning">MODERATOR</span> <span
+                                        class="badge badge-success">USER</span></td>
+                            </tr>
+                            <tr>
+                                <td><span class="code-badge">isOnline</span></td>
+                                <td>boolean</td>
+                                <td>Real-time online status</td>
+                            </tr>
+                            <tr>
+                                <td><span class="code-badge">isBanned</span></td>
+                                <td>Boolean</td>
+                                <td>Admin ban flag</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="message-entity" class="tab-content">
+                <h3 class="section-subtitle">Message Entity</h3>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Field</th>
+                                <th>Type</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="code-badge">id</span></td>
+                                <td>Long</td>
+                                <td>Primary key</td>
+                            </tr>
+                            <tr>
+                                <td><span class="code-badge">type</span></td>
+                                <td>MessageType</td>
+                                <td><span class="badge badge-primary">CHAT</span> <span
+                                        class="badge badge-success">JOIN</span> <span
+                                        class="badge badge-danger">LEAVE</span></td>
+                            </tr>
+                            <tr>
+                                <td><span class="code-badge">content</span></td>
+                                <td>String</td>
+                                <td>Message text</td>
+                            </tr>
+                            <tr>
+                                <td><span class="code-badge">sender</span></td>
+                                <td>String</td>
+                                <td>Username of sender</td>
+                            </tr>
+                            <tr>
+                                <td><span class="code-badge">timestamp</span></td>
+                                <td>LocalDateTime</td>
+                                <td>Auto-set on persist</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="file-entity" class="tab-content">
+                <h3 class="section-subtitle">SharedFile Entity</h3>
+                <p style="color: var(--text-secondary); margin-bottom: 1rem;">Stores uploaded files as BLOBs directly in
+                    the database.</p>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Field</th>
+                                <th>Type</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="code-badge">id</span></td>
+                                <td>Long</td>
+                                <td>Primary key</td>
+                            </tr>
+                            <tr>
+                                <td><span class="code-badge">originalFilename</span></td>
+                                <td>String</td>
+                                <td>User-uploaded name</td>
+                            </tr>
+                            <tr>
+                                <td><span class="code-badge">contentType</span></td>
+                                <td>String</td>
+                                <td>MIME type</td>
+                            </tr>
+                            <tr>
+                                <td><span class="code-badge">fileSize</span></td>
+                                <td>Long</td>
+                                <td>Size in bytes</td>
+                            </tr>
+                            <tr>
+                                <td><span class="code-badge">fileData</span></td>
+                                <td>byte[]</td>
+                                <td>Actual file binary (BLOB)</td>
+                            </tr>
+                            <tr>
+                                <td><span class="code-badge">uploadedBy</span></td>
+                                <td>String</td>
+                                <td>Username</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- Services Section -->
+        <section id="services" class="section">
+            <h2 class="section-title">
+                <i class="fas fa-cogs"></i>
+                Service Layer (Business Logic)
+            </h2>
+
+            <div class="card-grid">
+                <div class="card">
+                    <div class="card-title">
+                        <i class="fas fa-shield-alt"></i>
+                        AuthService
+                    </div>
+                    <div class="card-content">
+                        <p><strong>login(LoginRequest)</strong></p>
+                        <p>Authenticates user via AuthenticationManager, returns JWT token</p>
+                        <br>
+                        <p><strong>register(RegisterRequest)</strong></p>
+                        <p>Validates Supabase token, creates user with hashed password</p>
+                        <br>
+                        <p><strong>validateSupabaseToken()</strong></p>
+                        <p>Calls Supabase API to verify email verification token</p>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">
+                        <i class="fas fa-brain"></i>
+                        GeminiService
+                    </div>
+                    <div class="card-content">
+                        <p><strong>generateWithTools()</strong></p>
+                        <p>Sends prompt to Gemini API with function declarations</p>
+                        <br>
+                        <p><strong>buildToolDeclarations()</strong></p>
+                        <p>Defines available functions: get_users, get_files, get_messages</p>
+                        <br>
+                        <p><strong>parseResponse()</strong></p>
+                        <p>Extracts text or function call from Gemini JSON response</p>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">
+                        <i class="fas fa-file-pdf"></i>
+                        KnowledgeService
+                    </div>
+                    <div class="card-content">
+                        <p>Provides PDF RAG (Retrieval-Augmented Generation) by reading PDF files from the knowledge/
+                            folder.</p>
+                        <br>
+                        <p>Enables the AI assistant to access and reference documentation stored in PDF format.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Controllers Section -->
+        <section id="controllers" class="section">
+            <h2 class="section-title">
+                <i class="fas fa-server"></i>
+                Controller Layer (REST APIs)
+            </h2>
+
+            <div class="tabs">
+                <button class="tab active" onclick="openTab(event, 'auth-controller')">AuthController</button>
+                <button class="tab" onclick="openTab(event, 'chat-controller')">ChatController</button>
+                <button class="tab" onclick="openTab(event, 'ai-controller')">AiController</button>
+                <button class="tab" onclick="openTab(event, 'admin-controller')">AdminController</button>
+            </div>
+
+            <div id="auth-controller" class="tab-content active">
+                <h3 class="section-subtitle">AuthController <span class="badge badge-primary">/api/auth</span></h3>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Endpoint</th>
+                                <th>Method</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="code-badge">/login</span></td>
+                                <td><span class="badge badge-success">POST</span></td>
+                                <td>Authenticate user, return JWT</td>
+                            </tr>
+                            <tr>
+                                <td><span class="code-badge">/register</span></td>
+                                <td><span class="badge badge-success">POST</span></td>
+                                <td>Create new user account</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="chat-controller" class="tab-content">
+                <h3 class="section-subtitle">ChatController <span class="badge badge-primary">/api/chat</span></h3>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Endpoint</th>
+                                <th>Method</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="code-badge">/history</span></td>
+                                <td><span class="badge badge-primary">GET</span></td>
+                                <td>Fetch all messages (ordered by timestamp)</td>
+                            </tr>
+                            <tr>
+                                <td><span class="code-badge">/online</span></td>
+                                <td><span class="badge badge-primary">GET</span></td>
+                                <td>Get list of currently online usernames</td>
+                            </tr>
+                            <tr>
+                                <td><span class="code-badge">/{id}</span></td>
+                                <td><span class="badge badge-danger">DELETE</span></td>
+                                <td>Delete a message (role-based permissions)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <h4 style="color: var(--secondary-color); margin-top: 1.5rem;">WebSocket Mappings</h4>
+                <ul style="color: var(--text-secondary); margin-top: 0.5rem;">
+                    <li><span class="code-badge">/app/chat.sendMessage</span> → Broadcast to <span
+                            class="code-badge">/topic/public</span></li>
+                    <li><span class="code-badge">/app/chat.addUser</span> → User join handler</li>
+                </ul>
+            </div>
+
+            <div id="ai-controller" class="tab-content">
+                <h3 class="section-subtitle">AiController <span class="badge badge-primary">/api/ai</span></h3>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Endpoint</th>
+                                <th>Method</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="code-badge">/test</span></td>
+                                <td><span class="badge badge-primary">GET</span></td>
+                                <td>Test Gemini connection</td>
+                            </tr>
+                            <tr>
+                                <td><span class="code-badge">/chat</span></td>
+                                <td><span class="badge badge-success">POST</span></td>
+                                <td>Main chat endpoint with Function Calling (MCP)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="admin-controller" class="tab-content">
+                <h3 class="section-subtitle">AdminController <span class="badge badge-primary">/api/admin</span></h3>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Endpoint</th>
+                                <th>Method</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="code-badge">/stats</span></td>
+                                <td><span class="badge badge-primary">GET</span></td>
+                                <td>Dashboard stats (users, messages, files)</td>
+                            </tr>
+                            <tr>
+                                <td><span class="code-badge">/stats/activity</span></td>
+                                <td><span class="badge badge-primary">GET</span></td>
+                                <td>Message activity for last 7 days (chart data)</td>
+                            </tr>
+                            <tr>
+                                <td><span class="code-badge">/users</span></td>
+                                <td><span class="badge badge-primary">GET</span></td>
+                                <td>List all users with details</td>
+                            </tr>
+                            <tr>
+                                <td><span class="code-badge">/users/{id}/ban</span></td>
+                                <td><span class="badge badge-success">POST</span></td>
+                                <td>Ban a user</td>
+                            </tr>
+                            <tr>
+                                <td><span class="code-badge">/users/{id}/promote</span></td>
+                                <td><span class="badge badge-success">POST</span></td>
+                                <td>Promote to Moderator</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <canvas id="apiEndpointsChart"></canvas>
+            </div>
+        </section>
+
+        <!-- WebSocket Section -->
+        <section id="websocket" class="section">
+            <h2 class="section-title">
+                <i class="fas fa-broadcast-tower"></i>
+                WebSocket & Real-Time Communication
+            </h2>
+
+            <h3 class="section-subtitle">Configuration</h3>
+            <div class="code-block" data-lang="Java">
+                <code><span class="comment">// STOMP endpoint (with SockJS fallback)</span>
+registry.<span class="keyword">addEndpoint</span>(<span class="string">"/ws"</span>).<span class="keyword">setAllowedOriginPatterns</span>(<span class="string">"*"</span>).<span class="keyword">withSockJS</span>();
+
+<span class="comment">// Message broker</span>
+registry.<span class="keyword">setApplicationDestinationPrefixes</span>(<span class="string">"/app"</span>);
+registry.<span class="keyword">enableSimpleBroker</span>(<span class="string">"/topic"</span>);
+</code>
+            </div>
+
+            <h3 class="section-subtitle">Message Flow</h3>
+            <div class="flow-diagram">
+                <div class="flow-box">
+                    <i class="fas fa-user" style="font-size: 2rem; color: var(--primary-color);"></i>
+                    <h4>Client</h4>
+                    <p style="font-size: 0.9rem; color: var(--text-secondary);">Sends message</p>
+                </div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-box">
+                    <i class="fas fa-server" style="font-size: 2rem; color: var(--secondary-color);"></i>
+                    <h4>Server</h4>
+                    <p style="font-size: 0.9rem; color: var(--text-secondary);">Processes & validates</p>
+                </div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-box">
+                    <i class="fas fa-broadcast-tower" style="font-size: 2rem; color: var(--accent-color);"></i>
+                    <h4>Broker</h4>
+                    <p style="font-size: 0.9rem; color: var(--text-secondary);">Broadcasts to subscribers</p>
+                </div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-box">
+                    <i class="fas fa-users" style="font-size: 2rem; color: var(--success);"></i>
+                    <h4>All Clients</h4>
+                    <p style="font-size: 0.9rem; color: var(--text-secondary);">Receive update</p>
+                </div>
+            </div>
+
+            <h3 class="section-subtitle">WebSocket Events</h3>
+            <div class="card-grid">
+                <div class="card">
+                    <div class="card-title"><i class="fas fa-plug"></i> CONNECT</div>
+                    <div class="card-content">Client establishes WebSocket connection to <span
+                            class="code-badge">/ws</span></div>
+                </div>
+                <div class="card">
+                    <div class="card-title"><i class="fas fa-bell"></i> SUBSCRIBE</div>
+                    <div class="card-content">Client subscribes to <span class="code-badge">/topic/public</span> for
+                        broadcasts</div>
+                </div>
+                <div class="card">
+                    <div class="card-title"><i class="fas fa-paper-plane"></i> SEND</div>
+                    <div class="card-content">Client sends message to <span
+                            class="code-badge">/app/chat.sendMessage</span></div>
+                </div>
+                <div class="card">
+                    <div class="card-title"><i class="fas fa-sign-out-alt"></i> DISCONNECT</div>
+                    <div class="card-content">Server updates online status and notifies other users</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- AI Integration Section -->
+        <section id="ai" class="section">
+            <h2 class="section-title">
+                <i class="fas fa-brain"></i>
+                AI Integration (Sparky)
+            </h2>
+
+            <p style="color: var(--text-secondary); margin-bottom: 2rem;">
+                Sparky uses Google Gemini Pro with Function Calling to interact with application data, providing
+                intelligent responses based on real-time system information.
+            </p>
+
+            <h3 class="section-subtitle">Available Functions (MCP Tools)</h3>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Function</th>
+                            <th>Parameters</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="code-badge">get_users</span></td>
+                            <td>filter (optional: "online", "offline", "all")</td>
+                            <td>Returns user list with status</td>
+                        </tr>
+                        <tr>
+                            <td><span class="code-badge">get_files</span></td>
+                            <td>limit (optional)</td>
+                            <td>Returns recent shared files</td>
+                        </tr>
+                        <tr>
+                            <td><span class="code-badge">get_messages</span></td>
+                            <td>limit, sender (optional)</td>
+                            <td>Returns chat history</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3 class="section-subtitle">Execution Flow</h3>
+            <div class="flow-diagram">
+                <div class="flow-box">
+                    <h4>1. User Query</h4>
+                    <p style="font-size: 0.9rem; color: var(--text-secondary);">POST /api/ai/chat</p>
+                </div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-box">
+                    <h4>2. Build Context</h4>
+                    <p style="font-size: 0.9rem; color: var(--text-secondary);">System prompt + history</p>
+                </div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-box">
+                    <h4>3. Call Gemini</h4>
+                    <p style="font-size: 0.9rem; color: var(--text-secondary);">Generate response</p>
+                </div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-box">
+                    <h4>4. Execute Tool</h4>
+                    <p style="font-size: 0.9rem; color: var(--text-secondary);">If function call needed</p>
+                </div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-box">
+                    <h4>5. Final Response</h4>
+                    <p style="font-size: 0.9rem; color: var(--text-secondary);">Return to user</p>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <canvas id="aiFunctionCallsChart"></canvas>
+            </div>
+        </section>
+
+        <!-- Deployment Section -->
+        <section id="deployment" class="section">
+            <h2 class="section-title">
+                <i class="fas fa-cloud"></i>
+                Configuration & Deployment
+            </h2>
+
+            <h3 class="section-subtitle">Environment Variables</h3>
+            <div class="code-block" data-lang="Environment">
+                <code><span class="comment"># Server</span>
+<span class="keyword">PORT</span>=<span class="string">9195</span>
+
+<span class="comment"># Database (Development)</span>
+<span class="keyword">DB_URL</span>=<span class="string">jdbc:mysql://localhost:3306/chill_space_db?useSSL=false</span>
+<span class="keyword">DB_USERNAME</span>=<span class="string">root</span>
+<span class="keyword">DB_PASSWORD</span>=<span class="string">your_password</span>
+
+<span class="comment"># Database (Production - Aiven)</span>
+<span class="keyword">DB_URL2</span>=<span class="string">jdbc:mysql://...aivencloud.com:18358/chill_space_db?sslMode=VERIFY_CA...</span>
+
+<span class="comment"># AI & Cloud</span>
+<span class="keyword">GEMINI_API_KEY</span>=<span class="string">AIza...</span>
+<span class="keyword">SUPABASE_URL</span>=<span class="string">https://...</span>
+</code>
+            </div>
+
+            <h3 class="section-subtitle">Docker Configuration</h3>
+            <div class="code-block" data-lang="Dockerfile">
+                <code><span class="comment"># Build Stage</span>
+<span class="keyword">FROM</span> maven:3.9-eclipse-temurin-17 <span class="keyword">AS</span> build
+<span class="keyword">WORKDIR</span> /app
+<span class="keyword">COPY</span> pom.xml .
+<span class="keyword">COPY</span> src ./src
+<span class="keyword">RUN</span> mvn clean package -DskipTests
+
+<span class="comment"># Run Stage</span>
+<span class="keyword">FROM</span> eclipse-temurin:17-jdk-jammy
+<span class="keyword">WORKDIR</span> /app
+<span class="keyword">COPY</span> --from=build /app/target/*.jar app.jar
+<span class="keyword">EXPOSE</span> 9195
+<span class="keyword">ENTRYPOINT</span> [<span class="string">"java"</span>, <span class="string">"-jar"</span>, <span class="string">"app.jar"</span>]
+</code>
+            </div>
+
+            <h3 class="section-subtitle">Deployment Platforms</h3>
+            <div class="card-grid">
+                <div class="card">
+                    <div class="card-title"><i class="fas fa-train"></i> Railway</div>
+                    <div class="card-content">Connect GitHub repo, set environment variables, automatic deployments on
+                        push</div>
+                </div>
+                <div class="card">
+                    <div class="card-title"><i class="fas fa-server"></i> Render</div>
+                    <div class="card-content">Docker-based deployment with automatic SSL certificates</div>
+                </div>
+                <div class="card">
+                    <div class="card-title"><i class="fas fa-database"></i> Aiven Cloud</div>
+                    <div class="card-content">Managed MySQL database with SSL/TLS encryption</div>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <canvas id="deploymentChart"></canvas>
+            </div>
+        </section>
+
+        <!-- Summary Section -->
+        <section class="section"
+            style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(139, 92, 246, 0.2));">
+            <h2 class="section-title">
+                <i class="fas fa-check-circle"></i>
+                Project Summary
+            </h2>
+            <p style="color: var(--text-secondary); margin-bottom: 2rem; font-size: 1.1rem;">
+                This backend demonstrates a complete, production-ready Spring Boot application featuring clean
+                architecture, secure authentication, real-time communication, AI integration, and cloud-ready
+                deployment.
+            </p>
+
+            <div class="feature-list">
+                <div class="feature-item">
+                    <i class="fas fa-check-circle"></i>
+                    <div><strong>Clean Architecture</strong> - Model, Repository, Service, Controller layers</div>
+                </div>
+                <div class="feature-item">
+                    <i class="fas fa-check-circle"></i>
+                    <div><strong>Secure Authentication</strong> - JWT with role-based access</div>
+                </div>
+                <div class="feature-item">
+                    <i class="fas fa-check-circle"></i>
+                    <div><strong>Real-Time Communication</strong> - WebSocket with STOMP</div>
+                </div>
+                <div class="feature-item">
+                    <i class="fas fa-check-circle"></i>
+                    <div><strong>AI Integration</strong> - Gemini with Function Calling (MCP)</div>
+                </div>
+                <div class="feature-item">
+                    <i class="fas fa-check-circle"></i>
+                    <div><strong>Cloud-Ready</strong> - Docker, Environment Variables, SSL</div>
+                </div>
+                <div class="feature-item">
+                    <i class="fas fa-check-circle"></i>
+                    <div><strong>Production-Ready</strong> - Error handling, validation, security</div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <button id="scrollTopBtn" onclick="scrollToTop()">
+        <i class="fas fa-arrow-up"></i>
+    </button>
+
+    <footer>
+        <p>Created with <span class="heart">❤️</span> by <strong>Tamizharasan</strong></p>
+        <p style="margin-top: 0.5rem; font-size: 0.9rem;">Chill Space Backend Documentation v1.0</p>
+    </footer>
+
+    <script>
+        // Navigation and Scroll
+        function scrollToSection(sectionId) {
+            const section = document.getElementById(sectionId);
+            if (section) {
+                section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+                // Update active nav button
+                document.querySelectorAll('.nav-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                event.target.classList.add('active');
+            }
+        }
+
+        // Scroll to Top Button
+        window.onscroll = function () {
+            const scrollBtn = document.getElementById('scrollTopBtn');
+            if (document.body.scrollTop > 300 || document.documentElement.scrollTop > 300) {
+                scrollBtn.style.display = 'flex';
+            } else {
+                scrollBtn.style.display = 'none';
+            }
+        };
+
+        function scrollToTop() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Tab Functionality
+        function openTab(evt, tabName) {
+            const tabContents = document.getElementsByClassName('tab-content');
+            for (let i = 0; i < tabContents.length; i++) {
+                tabContents[i].classList.remove('active');
+            }
+
+            const tabs = document.getElementsByClassName('tab');
+            for (let i = 0; i < tabs.length; i++) {
+                tabs[i].classList.remove('active');
+            }
+
+            document.getElementById(tabName).classList.add('active');
+            evt.currentTarget.classList.add('active');
+        }
+
+        // Chart.js Configurations
+        const chartOptions = {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    labels: {
+                        color: '#f1f5f9',
+                        font: {
+                            size: 12
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    ticks: { color: '#94a3b8' },
+                    grid: { color: 'rgba(148, 163, 184, 0.1)' }
+                },
+                x: {
+                    ticks: { color: '#94a3b8' },
+                    grid: { color: 'rgba(148, 163, 184, 0.1)' }
+                }
+            }
+        };
+
+        // Tech Stack Chart
+        new Chart(document.getElementById('techStackChart'), {
+            type: 'doughnut',
+            data: {
+                labels: ['Spring Boot', 'Spring Security', 'WebSocket', 'JPA/Hibernate', 'Gemini AI', 'MySQL'],
+                datasets: [{
+                    data: [25, 15, 15, 20, 15, 10],
+                    backgroundColor: [
+                        '#6366f1',
+                        '#8b5cf6',
+                        '#ec4899',
+                        '#f59e0b',
+                        '#10b981',
+                        '#3b82f6'
+                    ],
+                    borderWidth: 2,
+                    borderColor: '#1e293b'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: {
+                            color: '#f1f5f9',
+                            font: { size: 12 }
+                        }
+                    },
+                    title: {
+                        display: true,
+                        text: 'Technology Stack Distribution',
+                        color: '#f1f5f9',
+                        font: { size: 16 }
+                    }
+                }
+            }
+        });
+
+        // Architecture Layers Chart
+        new Chart(document.getElementById('architectureChart'), {
+            type: 'bar',
+            data: {
+                labels: ['Frontend', 'Backend', 'Database', 'AI Service', 'Cloud'],
+                datasets: [{
+                    label: 'Components Count',
+                    data: [3, 8, 3, 2, 2],
+                    backgroundColor: [
+                        'rgba(99, 102, 241, 0.8)',
+                        'rgba(139, 92, 246, 0.8)',
+                        'rgba(236, 72, 153, 0.8)',
+                        'rgba(16, 185, 129, 0.8)',
+                        'rgba(245, 158, 11, 0.8)'
+                    ],
+                    borderColor: [
+                        '#6366f1',
+                        '#8b5cf6',
+                        '#ec4899',
+                        '#10b981',
+                        '#f59e0b'
+                    ],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                ...chartOptions,
+                plugins: {
+                    ...chartOptions.plugins,
+                    title: {
+                        display: true,
+                        text: 'Architecture Components',
+                        color: '#f1f5f9',
+                        font: { size: 16 }
+                    }
+                }
+            }
+        });
+
+        // Package Distribution Chart
+        new Chart(document.getElementById('packageDistributionChart'), {
+            type: 'polarArea',
+            data: {
+                labels: ['Controllers', 'Services', 'Repositories', 'Models', 'Security', 'Config'],
+                datasets: [{
+                    data: [6, 3, 4, 5, 2, 2],
+                    backgroundColor: [
+                        'rgba(99, 102, 241, 0.7)',
+                        'rgba(139, 92, 246, 0.7)',
+                        'rgba(236, 72, 153, 0.7)',
+                        'rgba(16, 185, 129, 0.7)',
+                        'rgba(245, 158, 11, 0.7)',
+                        'rgba(59, 130, 246, 0.7)'
+                    ],
+                    borderColor: '#1e293b',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: {
+                            color: '#f1f5f9',
+                            font: { size: 12 }
+                        }
+                    },
+                    title: {
+                        display: true,
+                        text: 'Package Structure Distribution',
+                        color: '#f1f5f9',
+                        font: { size: 16 }
+                    }
+                }
+            }
+        });
+
+        // API Endpoints Chart
+        new Chart(document.getElementById('apiEndpointsChart'), {
+            type: 'bar',
+            data: {
+                labels: ['Auth', 'Chat', 'AI', 'Admin', 'File', 'User'],
+                datasets: [{
+                    label: 'Number of Endpoints',
+                    data: [2, 3, 2, 8, 5, 5],
+                    backgroundColor: 'rgba(99, 102, 241, 0.8)',
+                    borderColor: '#6366f1',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                ...chartOptions,
+                indexAxis: 'y',
+                plugins: {
+                    ...chartOptions.plugins,
+                    title: {
+                        display: true,
+                        text: 'REST API Endpoints by Controller',
+                        color: '#f1f5f9',
+                        font: { size: 16 }
+                    }
+                }
+            }
+        });
+
+        // AI Function Calls Chart
+        new Chart(document.getElementById('aiFunctionCallsChart'), {
+            type: 'radar',
+            data: {
+                labels: ['User Queries', 'File Retrieval', 'Message History', 'User Status', 'Analytics', 'Knowledge Base'],
+                datasets: [{
+                    label: 'Function Usage Frequency',
+                    data: [85, 65, 75, 90, 55, 70],
+                    backgroundColor: 'rgba(99, 102, 241, 0.2)',
+                    borderColor: '#6366f1',
+                    borderWidth: 2,
+                    pointBackgroundColor: '#6366f1',
+                    pointBorderColor: '#fff',
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: '#6366f1'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: '#f1f5f9',
+                            font: { size: 12 }
+                        }
+                    },
+                    title: {
+                        display: true,
+                        text: 'AI Function Call Distribution',
+                        color: '#f1f5f9',
+                        font: { size: 16 }
+                    }
+                },
+                scales: {
+                    r: {
+                        ticks: { color: '#94a3b8', backdropColor: 'transparent' },
+                        grid: { color: 'rgba(148, 163, 184, 0.2)' },
+                        pointLabels: { color: '#f1f5f9' }
+                    }
+                }
+            }
+        });
+
+        // Deployment Timeline Chart
+        new Chart(document.getElementById('deploymentChart'), {
+            type: 'line',
+            data: {
+                labels: ['Development', 'Testing', 'Docker Build', 'Cloud Deploy', 'Production'],
+                datasets: [{
+                    label: 'Deployment Progress',
+                    data: [20, 45, 70, 85, 100],
+                    backgroundColor: 'rgba(99, 102, 241, 0.2)',
+                    borderColor: '#6366f1',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4,
+                    pointBackgroundColor: '#6366f1',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    pointRadius: 5,
+                    pointHoverRadius: 7
+                }]
+            },
+            options: {
+                ...chartOptions,
+                plugins: {
+                    ...chartOptions.plugins,
+                    title: {
+                        display: true,
+                        text: 'Deployment Pipeline Progress',
+                        color: '#f1f5f9',
+                        font: { size: 16 }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        ticks: {
+                            color: '#94a3b8',
+                            callback: function (value) {
+                                return value + '%';
+                            }
+                        },
+                        grid: { color: 'rgba(148, 163, 184, 0.1)' }
+                    },
+                    x: {
+                        ticks: { color: '#94a3b8' },
+                        grid: { color: 'rgba(148, 163, 184, 0.1)' }
+                    }
+                }
+            }
+        });
+
+        // Intersection Observer for Animation
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -100px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.section').forEach(section => {
+            section.style.opacity = '0';
+            section.style.transform = 'translateY(30px)';
+            section.style.transition = 'opacity 0.6s ease-out, transform 0.6s ease-out';
+            observer.observe(section);
+        });
+    </script>
+</body>
+
+</html>

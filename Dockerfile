@@ -1,26 +1,17 @@
-# Use an official OpenJDK runtime as a parent image
-FROM openjdk:17-jdk-slim
-
-# Set the working directory in the container
+# Build Stage
+# Use a Maven image to build the app (no need for local mvnw)
+FROM maven:3.9-eclipse-temurin-17 AS build
 WORKDIR /app
-
-# Copy the project's POM file and source code
 COPY pom.xml .
 COPY src ./src
-COPY .mvn ./.mvn
-COPY mvnw .
+COPY knowledge ./knowledge
+RUN mvn clean package -DskipTests
 
-# Build the application
-# Note: We skip tests to speed up the build in the container. 
-# In a real pipeline, you should run tests.
-RUN ./mvnw clean package -DskipTests
-
-# Copy the built jar to the current directory
-# Adjust the jar name if it's different in your pom.xml (e.g., backend-0.0.1-SNAPSHOT.jar)
-RUN cp target/*.jar app.jar
-
-# Expose the port the app runs on
+# Run Stage
+# Use a smaller JRE image to run the app
+FROM eclipse-temurin:17-jdk-jammy
+WORKDIR /app
+COPY --from=build /app/target/*.jar app.jar
+COPY --from=build /app/knowledge ./knowledge
 EXPOSE 9195
-
-# Run the jar file
 ENTRYPOINT ["java", "-jar", "app.jar"]

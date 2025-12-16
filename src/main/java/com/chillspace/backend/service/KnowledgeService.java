@@ -17,7 +17,7 @@ public class KnowledgeService {
 
     private static final Logger logger = LoggerFactory.getLogger(KnowledgeService.class);
     private static final String KNOWLEDGE_DIR = "knowledge"; // Directory in project root
-    
+
     // Cache to avoid re-parsing PDFs on every request
     private final ConcurrentHashMap<String, String> knowledgeCache = new ConcurrentHashMap<>();
     private long lastCacheUpdate = 0;
@@ -38,14 +38,14 @@ public class KnowledgeService {
 
         StringBuilder sb = new StringBuilder();
         sb.append("=== KNOWLEDGE BASE (USER PROVIDED DOCUMENTS) ===\n");
-        
+
         knowledgeCache.forEach((filename, content) -> {
             sb.append("\n📄 DOCUMENT: ").append(filename).append("\n");
             sb.append("----------------------------------------\n");
             sb.append(content).append("\n");
             sb.append("----------------------------------------\n");
         });
-        
+
         sb.append("=== END KNOWLEDGE BASE ===\n\n");
         return sb.toString();
     }
@@ -53,24 +53,26 @@ public class KnowledgeService {
     private void refreshCache() {
         File folder = new File(KNOWLEDGE_DIR);
         if (!folder.exists() || !folder.isDirectory()) {
-            // Try absolute path if relative fails (for IDE/container differences)
-            folder = new File("d:/TAMIZH/CHILL_SPACE-SpringBoot/knowledge");
+            logger.warn("⚠️ Knowledge directory not found at: {}. Trying /app/knowledge...", folder.getAbsolutePath());
+            // Try container path
+            folder = new File("/app/knowledge");
             if (!folder.exists()) {
-                logger.warn("⚠️ Knowledge directory not found: {}", folder.getAbsolutePath());
+                logger.warn("⚠️ Knowledge directory also not found at /app/knowledge. Knowledge base disabled.");
                 return;
             }
         }
 
         File[] files = folder.listFiles((dir, name) -> name.toLowerCase().endsWith(".pdf"));
-        if (files == null) return;
+        if (files == null)
+            return;
 
         logger.info("📚 Scanning knowledge base: {} files found", files.length);
 
         for (File file : files) {
             String filename = file.getName();
-            // Simple check if file modified since last read could be added, 
+            // Simple check if file modified since last read could be added,
             // but for now we re-read every TTL to be safe.
-            
+
             try {
                 String text = extractTextFromPdf(file);
                 // Truncate if too huge to prevent token explosion
@@ -82,7 +84,7 @@ public class KnowledgeService {
                 logger.error("❌ Error reading PDF {}: {}", filename, e.getMessage());
             }
         }
-        
+
         lastCacheUpdate = System.currentTimeMillis();
     }
 
