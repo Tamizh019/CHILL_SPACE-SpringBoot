@@ -2,6 +2,9 @@
 
 **ChillSpace** is a modern, real-time chat application built with a robust Spring Boot backend and a sleek, glassmorphic frontend. It features **Sparky ⚡**, an advanced AI assistant capable of interacting with the application's data via Function Calling (MCP).
 
+> **🔴 LIVE DEMO:** [https://chill-space-springboot.onrender.com](https://chill-space-springboot.onrender.com)
+> _(Note: Hosted on Render Free Tier. It may take 1-2 minutes to wake up from sleep mode, so please be patient!)_
+
 ![Status](https://img.shields.io/badge/Status-Active_Development-success?style=for-the-badge)
 ![Tech](https://img.shields.io/badge/Tech-Spring_Boot_%7C_Docker_%7C_MySQL_%7C_Gemini_AI-blueviolet?style=for-the-badge)
 
@@ -33,7 +36,7 @@
   - **Responsive:** Optimized layouts (Compact/75% zoom style).
   - **Visuals:** Animated backgrounds, smooth transitions, and premium styling.
 
-### 🚧 **In Progress / To Do**
+### 🚧 **Future Plans**
 - [ ] **Private Messaging:** (Currently Global Group Chat only).
 - [ ] **Advanced Moderation:** AI-powered toxic message filtering.
 - [ ] **Supabase Integration:** fully offloading file storage to Supabase Cloud.
